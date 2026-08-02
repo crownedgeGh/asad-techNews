@@ -1,0 +1,18 @@
+---
+import ArticleCard from './ArticleCard.astro';
+
+// Using mock data for now
+const relatedArticles = [
+  { title: "Review of the Previous Generation", excerpt: "Comparing last year's model to what we have today.", imageUrl: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&q=80&w=600&h=400", category: "Hardware", slug: "prev-gen-review", date: "Jan 15, 2026" },
+  { title: "How to optimize your workflow", excerpt: "Tips and tricks to get more done in less time.", imageUrl: "https://images.unsplash.com/photo-1481481920803-fb94e1d441f7?auto=format&fit=crop&q=80&w=600&h=400", category: "Productivity", slug: "workflow-tips", date: "Jun 10, 2026" },
+];
+---
+
+<div class="mt-16">
+  <h3 class="text-2xl font-heading font-bold text-slate-900 dark:text-white mb-6 border-b border-slate-200 dark:border-slate-800 pb-2">Related Articles</h3>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+    {relatedArticles.map(article => (
+      <ArticleCard {...article} />
+    ))}
+  </div>
+</div>

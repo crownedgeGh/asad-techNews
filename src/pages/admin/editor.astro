@@ -1,0 +1,17 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Editor from '../../components/Editor';
+---
+
+<Layout title="Write Article">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="mb-8">
+      <h1 class="text-3xl font-heading font-bold text-slate-900 dark:text-white">Create New Article</h1>
+      <p class="text-slate-600 dark:text-slate-400 mt-2">Write and publish a new article to AboutTech.</p>
+    </div>
+    
+    <div class="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 md:p-8">
+      <Editor client:load />
+    </div>
+  </div>
+</Layout>

@@ -1,0 +1,37 @@
+---
+interface Props {
+  title: string;
+  excerpt?: string;
+  imageUrl: string;
+  category: string;
+  slug: string;
+  date: string;
+  author?: string;
+}
+
+const { title, excerpt, imageUrl, category, slug, date, author = "Tech Editor" } = Astro.props;
+---
+
+<article class="flex flex-row gap-6 group py-6 border-b border-slate-200 dark:border-slate-800 last:border-0">
+  <a href={`/article/${slug}`} class="w-1/3 md:w-1/4 shrink-0 overflow-hidden rounded-sm">
+    <img 
+      src={imageUrl} 
+      alt={title} 
+      class="w-full aspect-[16/10] object-cover object-center group-hover:scale-105 transition-transform duration-500"
+      loading="lazy"
+    />
+  </a>
+  <div class="flex flex-col justify-start w-2/3 md:w-3/4 pt-1">
+    <a href={`/article/${slug}`} class="block">
+      <h3 class="text-lg md:text-xl lg:text-2xl font-heading font-medium text-slate-800 dark:text-slate-100 mb-2 group-hover:text-primary dark:group-hover:text-primary transition-colors leading-tight">
+        {title}
+      </h3>
+    </a>
+    <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-2">
+      <div class="text-sm text-slate-500 dark:text-slate-400">
+        Written by <span class="text-slate-700 dark:text-slate-300">{author}</span>, {date}
+      </div>
+    </div>
+    <span class="text-sm font-bold uppercase tracking-widest text-primary">{category}</span>
+  </div>
+</article>

@@ -1,0 +1,36 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-body: 'Roboto', Merriweather, Georgia, 'Source Serif 4', Lora, serif;
+  --font-heading: 'Montserrat', Inter, 'Helvetica Neue', 'Source Sans 3', sans-serif;
+  
+  --color-primary: #00B2A9; /* eLearning Theme Primary */
+  --color-secondary: #099e96; /* eLearning Theme Secondary */
+  --color-background-light: #ffffff;
+  --color-background-dark: #121212;
+  --color-text-light: #3B3B3B;
+  --color-text-dark: #E2E8F0;
+}
+
+@layer base {
+  body {
+    font-family: var(--font-body);
+    background-color: var(--color-background-light);
+    color: var(--color-text-light);
+    transition: background-color 0.3s, color 0.3s;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    font-weight: 600;
+  }
+}
+
+.dark body {
+  background-color: var(--color-background-dark);
+  color: var(--color-text-dark);
+}
+
