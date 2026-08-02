@@ -4,6 +4,8 @@ import SocialShare from '../../components/SocialShare';
 import Comments from '../../components/Comments';
 import RelatedArticles from '../../components/RelatedArticles.astro';
 
+export const prerender = true;
+
 // In a real app, this would be fetched from DB via the slug
 export function getStaticPaths() {
   return [
