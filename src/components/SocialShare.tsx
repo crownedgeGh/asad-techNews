@@ -35,53 +35,55 @@ export default function SocialShare({ url, title }: { url: string, title: string
   };
 
   return (
-    <div className="flex items-center flex-wrap gap-4 py-6 border-t border-b border-slate-200 dark:border-slate-800 my-8">
-      <span className="font-bold text-slate-900 dark:text-white">Share:</span>
-      <button 
-        onClick={copyToClipboard}
-        className="p-2 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 transition-colors"
-        title="Copy Link"
-      >
-        <FiLink className="w-5 h-5" />
-      </button>
-      <a 
-        href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="p-2 rounded-full bg-slate-100 text-slate-600 hover:bg-[#1DA1F2] hover:text-white dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-[#1DA1F2] dark:hover:text-white transition-colors"
-      >
-        <FiTwitter className="w-5 h-5" />
-      </a>
-      <a 
-        href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="p-2 rounded-full bg-slate-100 text-slate-600 hover:bg-[#4267B2] hover:text-white dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-[#4267B2] dark:hover:text-white transition-colors"
-      >
-        <FiFacebook className="w-5 h-5" />
-      </a>
-      <a 
-        href={`https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="p-2 rounded-full bg-slate-100 text-slate-600 hover:bg-[#0077b5] hover:text-white dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-[#0077b5] dark:hover:text-white transition-colors"
-      >
-        <FiLinkedin className="w-5 h-5" />
-      </a>
-
-      <div className="h-6 w-px bg-slate-200 dark:bg-slate-800 mx-2"></div>
+    <div className="flex items-center justify-between flex-wrap gap-4 py-4 px-6 bg-slate-50/50 dark:bg-slate-800/30 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl my-6 backdrop-blur-sm">
+      <div className="flex items-center gap-3">
+        <span className="text-xs font-bold tracking-wide uppercase text-slate-400 dark:text-slate-500">Share article:</span>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={copyToClipboard}
+            className="p-2 rounded-xl bg-white dark:bg-slate-800 text-slate-600 hover:text-primary border border-slate-200/80 dark:border-slate-700/80 shadow-sm hover:shadow dark:text-slate-400 dark:hover:text-primary transition-all duration-200 cursor-pointer"
+            title="Copy Link"
+          >
+            <FiLink className="w-4.5 h-4.5" />
+          </button>
+          <a 
+            href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-2 rounded-xl bg-white dark:bg-slate-800 text-slate-600 hover:bg-[#1DA1F2] hover:text-white border border-slate-200/80 dark:border-slate-700/80 shadow-sm hover:shadow dark:text-slate-400 dark:hover:bg-[#1DA1F2] dark:hover:text-white transition-all duration-200"
+          >
+            <FiTwitter className="w-4.5 h-4.5" />
+          </a>
+          <a 
+            href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-2 rounded-xl bg-white dark:bg-slate-800 text-slate-600 hover:bg-[#4267B2] hover:text-white border border-slate-200/80 dark:border-slate-700/80 shadow-sm hover:shadow dark:text-slate-400 dark:hover:bg-[#4267B2] dark:hover:text-white transition-all duration-200"
+          >
+            <FiFacebook className="w-4.5 h-4.5" />
+          </a>
+          <a 
+            href={`https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-2 rounded-xl bg-white dark:bg-slate-800 text-slate-600 hover:bg-[#0077b5] hover:text-white border border-slate-200/80 dark:border-slate-700/80 shadow-sm hover:shadow dark:text-slate-400 dark:hover:bg-[#0077b5] dark:hover:text-white transition-all duration-200"
+          >
+            <FiLinkedin className="w-4.5 h-4.5" />
+          </a>
+        </div>
+      </div>
 
       <button 
         onClick={handleLike}
-        className={`flex items-center gap-2 px-4 py-1.5 rounded-full border transition-all duration-300 cursor-pointer ${
+        className={`flex items-center gap-2 px-5 py-2 rounded-xl border shadow-sm hover:shadow transition-all duration-300 cursor-pointer ${
           liked 
-            ? 'bg-rose-50 border-rose-200 text-rose-600 dark:bg-rose-950/30 dark:border-rose-900/50 dark:text-rose-400 font-bold scale-105' 
-            : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-white'
+            ? 'bg-rose-50 border-rose-200/80 text-rose-600 dark:bg-rose-950/20 dark:border-rose-900/60 dark:text-rose-400 font-bold scale-105' 
+            : 'bg-white border-slate-200/80 text-slate-600 hover:bg-slate-50 hover:text-rose-500 dark:bg-slate-800 dark:border-slate-700/80 dark:text-slate-400 dark:hover:bg-slate-750 dark:hover:text-rose-400'
         }`}
         title={liked ? "Unlike" : "Like"}
       >
-        <FiHeart className={`w-4 h-4 transition-transform ${liked ? 'fill-current scale-110' : ''}`} />
-        <span className="text-sm font-semibold">{likesCount}</span>
+        <FiHeart className={`w-4.5 h-4.5 transition-transform ${liked ? 'fill-current scale-110 text-rose-600 dark:text-rose-400' : 'group-hover:text-rose-500'}`} />
+        <span className="text-sm font-semibold">{likesCount} likes</span>
       </button>
     </div>
   );

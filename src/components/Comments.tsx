@@ -21,7 +21,7 @@ export default function Comments() {
   };
 
   return (
-    <div className="mt-12">
+    <div className="mt-6">
       <h3 className="text-2xl font-heading font-bold text-slate-900 dark:text-white mb-6">Comments ({comments.length})</h3>
       
       <form onSubmit={handleSubmit} className="mb-8">
