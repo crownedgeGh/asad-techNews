@@ -1,0 +1,97 @@
+---
+import AdminLayout from '../../../../layouts/AdminLayout.astro';
+import { db } from '../../../../db';
+import { articles } from '../../../../db/schema';
+import { eq } from 'drizzle-orm';
+
+const { id } = Astro.params;
+const articleId = parseInt(id!, 10);
+
+let article: typeof import('../../../../db/schema').articles.$inferSelect | undefined;
+try {
+  const rows = await db.select().from(articles).where(eq(articles.id, articleId));
+  article = rows[0];
+} catch {
+  return Astro.redirect('/admin/articles');
+}
+
+if (!article) {
+  return Astro.redirect('/admin/articles');
+}
+
+function formatDate(date: Date) {
+  return new Date(date).toLocaleDateString('en-US', {
+    month: 'long', day: 'numeric', year: 'numeric'
+  });
+}
+---
+
+<AdminLayout title={`View: ${article.title}`}>
+  <div class="space-y-4">
+    <!-- Breadcrumb + Actions -->
+    <div class="flex items-center justify-between flex-wrap gap-3">
+      <div class="breadcrumbs text-sm">
+        <ul>
+          <li><a href="/admin" class="text-base-content/50 hover:text-primary">Admin</a></li>
+          <li><a href="/admin/articles" class="text-base-content/50 hover:text-primary">Articles</a></li>
+          <li class="text-base-content/80">Preview</li>
+        </ul>
+      </div>
+      <div class="flex gap-2">
+        <a href={`/admin/articles/${article.id}/edit`} class="btn btn-primary btn-sm gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          </svg>
+          Edit Article
+        </a>
+        <a href="/admin/articles" class="btn btn-ghost btn-sm">← Back</a>
+      </div>
+    </div>
+
+    <!-- Article preview card -->
+    <article class="bg-base-100 rounded-xl border border-base-300 shadow-sm overflow-hidden">
+      <!-- Status banner -->
+      {!article.published && (
+        <div class="bg-warning/20 border-b border-warning/30 px-6 py-2 flex items-center gap-2">
+          <span class="badge badge-warning badge-sm">Draft</span>
+          <span class="text-sm text-warning-content/70">This article is not yet published</span>
+        </div>
+      )}
+
+      <!-- Cover image -->
+      {article.coverImage && (
+        <div class="w-full aspect-video overflow-hidden">
+          <img
+            src={article.coverImage}
+            alt={article.title}
+            class="w-full h-full object-cover"
+          />
+        </div>
+      )}
+
+      <div class="px-6 py-8 lg:px-12 lg:py-10 max-w-4xl mx-auto">
+        <!-- Meta -->
+        <div class="flex items-center gap-3 mb-4 flex-wrap">
+          <span class="badge badge-outline">{article.category}</span>
+          <span class="text-sm text-base-content/50">{formatDate(article.createdAt)}</span>
+          <div class="flex items-center gap-4 text-sm text-base-content/40 ml-auto">
+            <span>👁 {article.views.toLocaleString()}</span>
+            <span>♥ {article.likes.toLocaleString()}</span>
+            <span>💬 {article.commentsCount.toLocaleString()}</span>
+          </div>
+        </div>
+
+        <!-- Title -->
+        <h1 class="text-3xl lg:text-4xl font-bold text-base-content mb-6 leading-tight">
+          {article.title}
+        </h1>
+
+        <!-- Content rendered same as public portal -->
+        <div
+          class="prose prose-slate max-w-none"
+          set:html={article.content}
+        />
+      </div>
+    </article>
+  </div>
+</AdminLayout>

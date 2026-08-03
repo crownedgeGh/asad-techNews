@@ -1,0 +1,175 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { db } from '../../db';
+import { articles } from '../../db/schema';
+import { sql, desc } from 'drizzle-orm';
+
+// Aggregate stats (graceful fallback if DB not configured)
+let stats: { totalArticles: number; totalViews: number; totalLikes: number; totalComments: number } | null = null;
+let recentArticles: { id: number; title: string; category: string; published: boolean; createdAt: Date }[] = [];
+let dbError = false;
+
+try {
+  const [s] = await db.select({
+    totalArticles: sql<number>`count(*)::int`,
+    totalViews: sql<number>`coalesce(sum(views), 0)::int`,
+    totalLikes: sql<number>`coalesce(sum(likes), 0)::int`,
+    totalComments: sql<number>`coalesce(sum(comments_count), 0)::int`,
+  }).from(articles);
+  stats = s;
+
+  recentArticles = await db
+    .select({
+      id: articles.id,
+      title: articles.title,
+      category: articles.category,
+      published: articles.published,
+      createdAt: articles.createdAt,
+    })
+    .from(articles)
+    .orderBy(desc(articles.updatedAt))
+    .limit(5);
+} catch (e) {
+  dbError = true;
+  console.warn('Admin dashboard: DB unavailable, showing empty stats.');
+}
+
+function formatDate(date: Date) {
+  return new Date(date).toLocaleDateString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric'
+  });
+}
+---
+
+<AdminLayout title="Dashboard">
+  <div class="space-y-8">
+    <!-- Page header -->
+    <div>
+      <h1 class="text-2xl font-bold text-base-content">Dashboard</h1>
+      <p class="text-base-content/60 text-sm mt-1">Overview of The Lumen Tech</p>
+    </div>
+
+    <!-- DB unavailable warning -->
+    {dbError && (
+      <div class="alert alert-warning">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+        </svg>
+        <span><strong>Database not connected.</strong> Set <code>DATABASE_URL</code> in your <code>.env</code> file and restart the dev server to load real data.</span>
+      </div>
+    )}
+
+    <!-- Stats grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <!-- Total Articles -->
+      <div class="stat bg-base-100 rounded-xl border border-base-300 shadow-sm">
+        <div class="stat-figure text-primary">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        </div>
+        <div class="stat-title text-base-content/60">Total Articles</div>
+        <div class="stat-value text-primary">{stats?.totalArticles ?? 0}</div>
+        <div class="stat-desc">Published & drafts</div>
+      </div>
+
+      <!-- Total Views -->
+      <div class="stat bg-base-100 rounded-xl border border-base-300 shadow-sm">
+        <div class="stat-figure text-secondary">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+          </svg>
+        </div>
+        <div class="stat-title text-base-content/60">Total Views</div>
+        <div class="stat-value text-secondary">{(stats?.totalViews ?? 0).toLocaleString()}</div>
+        <div class="stat-desc">Across all articles</div>
+      </div>
+
+      <!-- Total Likes -->
+      <div class="stat bg-base-100 rounded-xl border border-base-300 shadow-sm">
+        <div class="stat-figure text-accent">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+          </svg>
+        </div>
+        <div class="stat-title text-base-content/60">Total Likes</div>
+        <div class="stat-value text-accent">{(stats?.totalLikes ?? 0).toLocaleString()}</div>
+        <div class="stat-desc">Reader engagement</div>
+      </div>
+
+      <!-- Total Comments -->
+      <div class="stat bg-base-100 rounded-xl border border-base-300 shadow-sm">
+        <div class="stat-figure text-warning">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          </svg>
+        </div>
+        <div class="stat-title text-base-content/60">Total Comments</div>
+        <div class="stat-value text-warning">{(stats?.totalComments ?? 0).toLocaleString()}</div>
+        <div class="stat-desc">Reader responses</div>
+      </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="bg-base-100 rounded-xl border border-base-300 shadow-sm overflow-hidden">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-base-300">
+        <h2 class="font-semibold text-base-content">Recent Activity</h2>
+        <a href="/admin/articles" class="btn btn-ghost btn-xs text-primary">View all →</a>
+      </div>
+      <div class="divide-y divide-base-200">
+        {recentArticles.length === 0 ? (
+          <p class="text-center py-12 text-base-content/40">No articles yet. <a href="/admin/articles/new" class="link link-primary">Create the first one!</a></p>
+        ) : (
+          recentArticles.map((article) => (
+            <div class="flex items-center justify-between px-6 py-4 hover:bg-base-50 transition-colors">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="min-w-0">
+                  <p class="font-medium text-sm text-base-content truncate">{article.title}</p>
+                  <p class="text-xs text-base-content/50 mt-0.5">{article.category} · {formatDate(article.createdAt)}</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 flex-shrink-0">
+                <span class={`badge badge-sm ${article.published ? 'badge-success' : 'badge-warning'}`}>
+                  {article.published ? 'Published' : 'Draft'}
+                </span>
+                <a href={`/admin/articles/${article.id}/edit`} class="btn btn-ghost btn-xs">Edit</a>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+
+    <!-- Quick actions -->
+    <div class="flex gap-3 flex-wrap">
+      <a href="/admin/articles/new" class="btn btn-primary gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        Post Article
+      </a>
+      <a href="/admin/articles" class="btn btn-outline gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+        </svg>
+        Manage Articles
+      </a>
+    </div>
+
+    <!-- DaisyUI Theme Test -->
+    <div class="bg-base-100 rounded-xl border border-base-300 shadow-sm p-6">
+      <h2 class="font-semibold text-base-content mb-4 text-sm uppercase tracking-wider opacity-60">DaisyUI emerald — Button Variants</h2>
+      <div class="flex flex-wrap gap-3">
+        <button class="btn btn-neutral">Neutral</button>
+        <button class="btn btn-primary">Primary</button>
+        <button class="btn btn-secondary">Secondary</button>
+        <button class="btn btn-accent">Accent</button>
+        <button class="btn btn-info">Info</button>
+        <button class="btn btn-success">Success</button>
+        <button class="btn btn-warning">Warning</button>
+        <button class="btn btn-error">Error</button>
+      </div>
+    </div>
+  </div>
+</AdminLayout>
