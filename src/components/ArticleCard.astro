@@ -7,9 +7,10 @@ interface Props {
   slug: string;
   date: string;
   author?: string;
+  views?: string;
 }
 
-const { title, excerpt, imageUrl, category, slug, date, author = "Tech Editor" } = Astro.props;
+const { title, excerpt, imageUrl, category, slug, date, author = "Tech Editor", views = "1.2K" } = Astro.props;
 ---
 
 <article class="flex flex-row gap-6 group py-6 border-b border-slate-200 dark:border-slate-800 last:border-0">
@@ -29,7 +30,7 @@ const { title, excerpt, imageUrl, category, slug, date, author = "Tech Editor" }
     </a>
     <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-2">
       <div class="text-sm text-slate-500 dark:text-slate-400">
-        Written by <span class="text-slate-700 dark:text-slate-300">{author}</span>, {date}
+        <span class="font-medium text-slate-700 dark:text-slate-300">{date}</span> &bull; {views} Views
       </div>
     </div>
     <span class="text-sm font-bold uppercase tracking-widest text-primary">{category}</span>
