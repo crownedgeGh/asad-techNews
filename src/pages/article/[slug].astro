@@ -75,6 +75,9 @@ const currentUrl = Astro.url.href;
           </div>
         </header>
 
+        {/* Social Share */}
+        <SocialShare client:load url={currentUrl} title={article.title} />
+
         {/* Cover Image */}
         <div class="mb-10 rounded-2xl overflow-hidden shadow-lg">
           <img src={article.coverImage} alt={article.title} class="w-full h-auto object-cover" />
@@ -92,9 +95,6 @@ const currentUrl = Astro.url.href;
              <span class="text-slate-500 dark:text-slate-400 font-bold">728x90 Leaderboard</span>
            </div>
         </div>
-
-        {/* Social Share */}
-        <SocialShare client:load url={currentUrl} title={article.title} />
 
         {/* Comments */}
         <Comments client:load />
