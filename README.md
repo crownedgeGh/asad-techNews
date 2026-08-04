@@ -1,45 +1,38 @@
-# Astro Starter Kit: Minimal
+# The Lumen Tech
 
-```sh
-npm create astro@latest -- --template minimal
-```
+A tech news/blog site built on **Next.js (App Router)** + **PayloadCMS** + **Neon Postgres**, with media stored on **Cloudflare R2**.
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
-
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
+## Project structure
 
 ```text
 /
-├── public/
 ├── src/
-│   └── pages/
-│       └── index.astro
+│   ├── app/
+│   │   ├── (frontend)/       # Public site — Home, /article/[slug]
+│   │   └── (payload)/        # Payload admin UI + REST/GraphQL API routes
+│   ├── collections/          # Payload collection configs (Users, Media, Categories, Articles, Comments)
+│   └── payload.config.ts     # Payload core config (db, storage, editor, collections)
 └── package.json
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+## Commands
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+This project uses **Bun** as its package manager — installs with `npm`/`yarn`/`pnpm` are blocked by a `preinstall` guard.
 
-Any static assets, like images, can be placed in the `public/` directory.
+| Command                    | Action                                              |
+| :-------------------------- | :--------------------------------------------------- |
+| `bun install`                | Install dependencies                                 |
+| `bun run dev`                | Start local dev server at `localhost:3000`            |
+| `bun run build`              | Production build                                      |
+| `bun run start`              | Run the production build                              |
+| `bun run generate:types`     | Regenerate `src/payload-types.ts` from collections    |
+| `bun run generate:importmap` | Regenerate the Payload admin import map               |
+| `bun run payload`            | Run any Payload CLI command                            |
 
-## 🧞 Commands
+## Environment
 
-All commands are run from the root of the project, from a terminal:
+Copy `.env.example` to `.env` and fill in `DATABASE_URL`, `PAYLOAD_SECRET`, and the `CLOUDFLARE_R2_*` values.
 
-| Command                | Action                                           |
-| :--------------------- | :----------------------------------------------- |
-| `bun install`          | Installs dependencies                            |
-| `bun run dev`          | Starts local dev server at `localhost:4321`      |
-| `bun run build`        | Build your production site to `./dist/`          |
-| `bun run preview`      | Preview your build locally, before deploying     |
-| `bun run astro ...`    | Run CLI commands like `astro add`, `astro check` |
-| `bun run astro --help` | Get help using the Astro CLI                     |
+## Admin panel
 
-This project uses **Bun** as its package manager (see `bun.lock` and the `packageManager` field in `package.json`). Installs with `npm`/`yarn`/`pnpm` are blocked by a `preinstall` guard — use `bun install`.
-
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+Visit `/admin` — Payload's built-in admin UI (first run prompts you to create the first user).

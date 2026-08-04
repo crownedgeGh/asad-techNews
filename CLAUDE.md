@@ -4,52 +4,56 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-"The Lumen Tech" (package name `blue-binary`) — a tech news/blog website with a public portal and an independent admin panel, built on Astro + React + Neon Postgres (Drizzle) + Cloudflare R2.
+"The Lumen Tech" (package name `blue-binary`) — a tech news/blog website built on Next.js (App Router) + PayloadCMS + Neon Postgres + Cloudflare R2.
+
+The project was migrated from an Astro + Drizzle custom-admin stack to Next.js + PayloadCMS. It is pre-launch — no production data, free to make breaking changes.
 
 ## Commands
 
 This project uses **Bun** as its package manager — `bun.lock` is the lockfile, `package.json` pins `packageManager` and blocks `npm`/`yarn`/`pnpm` installs via a `preinstall` guard. Always use `bun`, not `npm`/`npx`/`yarn`.
 
 - `bun install` — install dependencies
-- `bun run dev` — start local dev server (localhost:4321). Per AGENTS.md, prefer `astro dev --background` so the server doesn't block the terminal; manage it with `astro dev stop`, `astro dev status`, `astro dev logs`.
-- `bun run build` — production build to `./dist/`
-- `bun run preview` — preview a production build locally
-- `bun run astro ...` — run Astro CLI commands (e.g. `astro check`, `astro add`)
-- `bunx drizzle-kit generate` — generate a new SQL migration from `src/db/schema.ts` changes (writes to `./drizzle`)
-- `bunx drizzle-kit push` / `bunx drizzle-kit migrate` — apply schema changes to the Neon database (uses `DATABASE_URL`)
+- `bun run dev` — start local dev server (localhost:3000)
+- `bun run build` — production build
+- `bun run start` — run the production build
+- `bun run generate:types` — regenerate `src/payload-types.ts` from the collection configs after schema changes
+- `bun run generate:importmap` — regenerate the Payload admin import map after adding custom admin components
+- `bun run payload ...` — run any Payload CLI command
 
-No test runner or lint script is configured in `package.json`.
+Payload manages its own Postgres schema/migrations automatically in dev (push mode). For production, use Payload's migration commands (`bun run payload migrate:create`, `bun run payload migrate`) once the schema stabilizes.
 
 ## Environment
 
 Copy `.env.example` to `.env` and fill in:
 - `DATABASE_URL` — Neon Postgres connection string
-- `CLOUDFLARE_R2_ENDPOINT`, `CLOUDFLARE_R2_ACCESS_KEY_ID`, `CLOUDFLARE_R2_SECRET_ACCESS_KEY`, `CLOUDFLARE_R2_BUCKET_NAME` — R2 object storage for images
+- `PAYLOAD_SECRET` — long random string used to sign Payload's JWTs/tokens
+- `CLOUDFLARE_R2_ENDPOINT`, `CLOUDFLARE_R2_ACCESS_KEY_ID`, `CLOUDFLARE_R2_SECRET_ACCESS_KEY`, `CLOUDFLARE_R2_BUCKET_NAME` — R2 object storage for the `media` collection (via `@payloadcms/storage-s3`)
 
-Deployment target is Vercel (`@astrojs/vercel` adapter, `output: 'server'`).
+Deployment target is Vercel.
 
 ## Architecture
 
-**Two independent front-ends share one Astro app**, per `adminPlane.md`:
-- **Public portal** (`src/pages/index.astro`, `src/pages/article/[slug].astro`) uses `src/layouts/Layout.astro`, `Navbar.tsx`, `Footer.astro`, and `src/styles/global.css`. Supports light/dark mode via a `dark` class toggled on `<html>` (persisted in `localStorage.theme`, no FOUC by way of an inline `<script>` in the `<head>`).
-- **Admin panel** (`src/pages/admin/**`) uses `src/layouts/AdminLayout.astro` and `src/styles/admin.css` — its own header/sidebar/theming built on Origin UI/shadcn-style components (Radix primitives + `class-variance-authority` + `src/lib/utils.ts`'s `cn()`) living under `src/components/admin/ui/`, with a teal-based CSS-variable theme (light/dark via a `dark` class, persisted separately in `localStorage['admin-theme']`) and `lucide-react` icons (admin-only — the public portal keeps `react-icons`). It must never leak the public portal's header/footer or vice versa; when adding shared components, be deliberate about which layout consumes them.
+**Two route groups share one Next.js app**:
+- **`src/app/(frontend)`** — the public portal. Server components fetch content via Payload's Local API (`getPayload({ config })` then `payload.find(...)`) directly in page components — no separate REST round-trip needed since both run in the same Node process.
+- **`src/app/(payload)`** — Payload's own admin UI and REST/GraphQL API routes, wired up per Payload's standard Next.js integration (`RootLayout`, `RootPage`, `REST_*`/`GRAPHQL_*` route handlers from `@payloadcms/next`). Do not hand-build admin CRUD UI here — extend Payload's admin via collection `admin` config, custom fields, or admin components registered through the import map instead of bespoke React tables.
 
-**Data layer**: Drizzle ORM over Neon serverless Postgres. `src/db/schema.ts` defines `users` and `articles` tables (articles carry `views`, `likes`, `commentsCount`, and a `sortOrder` used for manual trend-ranking). `src/db/index.ts` exports the singleton `db` client. Schema changes go through drizzle-kit (see Commands) — migrations live in `./drizzle`.
+**Data layer**: `src/payload.config.ts` is the single source of truth for schema — collections live in `src/collections/*.ts`:
+- `Users` — auth-enabled, `role` (admin/editor)
+- `Media` — uploads, proxied to Cloudflare R2 via `@payloadcms/storage-s3`, with `thumbnail`/`card`/`og` image sizes
+- `Categories` — simple title/slug taxonomy
+- `Articles` — title, slug, excerpt, coverImage, lexical richText `content`, category/author relationships, `views`/`likes`/`commentsCount`/`sortOrder` counters (same manual-trend-ranking concept as before), draft/publish versioning enabled
+- `Comments` — belongs to an `article`, simple authorName/body (no nested threading yet)
 
-**Admin CRUD flow**: Astro API routes under `src/pages/api/admin/articles*.ts` (list/create at `articles.ts`, single-article get/update/delete at `articles/[id].ts`, drag-reorder at `articles/[id]/reorder.ts`) are called by React admin components (`src/components/admin/ArticlesTable.tsx`, `ArticleForm.tsx`, `AdminTable.tsx`) client-side so the UI updates without full page reloads. `AdminTable.tsx` is the shared generic table component intended for reuse across admin pages (collapses to a card layout on mobile/tablet per `adminPlane.md`). Article authoring uses TipTap (`src/components/admin/TipTapEditor.tsx`; a separate `Editor.tsx` exists for the public-facing/simple editor path).
+Run `bun run generate:types` after editing any collection so `src/payload-types.ts` stays in sync — import types from there rather than hand-rolling interfaces.
 
-**Image uploads**: `src/pages/api/upload.ts` accepts a multipart file, compresses/converts it to WebP via `sharp`, and uploads it to Cloudflare R2 via the AWS S3 SDK (`@aws-sdk/client-s3`), returning a public URL.
-
-**Comments/social**: `Comments.tsx` and `SocialShare.tsx` are React islands hydrated on public article pages.
+**Rich text**: Articles use Payload's Lexical editor (`@payloadcms/richtext-lexical`); render on the frontend with `<RichText data={article.content} />` from `@payloadcms/richtext-lexical/react`.
 
 ## Product/design constraints (from plan.md, adminPlane.md, agent.md)
 
-These are living product decisions, not just style notes — apply them when touching related UI:
+These predate the Payload migration and describe the previous Astro admin panel's UX bar — they still apply to the public portal. The admin panel is now Payload's own admin UI, so the Origin UI/shadcn/Radix-specific notes below no longer apply to `/admin`, only to any custom fields/components built on top of it:
 
-- Fully responsive everywhere (mobile/tablet/desktop); admin tables become cards on mobile/tablet.
-- Both light and dark mode must be supported throughout.
+- Fully responsive everywhere (mobile/tablet/desktop).
+- Both light and dark mode must be supported throughout the public portal (Payload's admin theme is handled by Payload itself).
 - Typography: body/article text uses Merriweather/Georgia/Source Serif 4/Lora; headings use Inter/Roboto/Helvetica Neue/Source Sans 3.
-- Admin panel uses Origin UI/shadcn-style components (Radix + Tailwind) with `lucide-react` icons (no emojis) and non-native modals/toasts — see `ConfirmModal.tsx` (Radix `Dialog`) and `AdminToaster.tsx` (`sonner`). Public portal continues to use `react-icons`.
-- Admin list/CRUD actions should reflect in the UI immediately (optimistic/refetch), not require a manual page refresh.
-- Articles are paginated 15 per page; the admin articles table supports manual up/down trend reordering (`sortOrder`) in addition to showing views/likes/comment counts.
 - Public site nav sections: Home, Trending, Tech News, AI Tools, Reviews, General News.
+- Articles are paginated 15 per page on the public portal.
