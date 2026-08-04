@@ -6,11 +6,11 @@ import ArticleForm from '../../../components/admin/ArticleForm';
 <AdminLayout title="Post Article">
   <div class="space-y-6">
     <div>
-      <h1 class="text-2xl font-bold text-base-content">Post Article</h1>
-      <p class="text-base-content/60 text-sm mt-1">Write and publish a new article</p>
+      <h1 class="text-2xl font-bold text-foreground">Post Article</h1>
+      <p class="text-muted-foreground text-sm mt-1">Write and publish a new article</p>
     </div>
 
-    <div class="bg-base-100 rounded-xl border border-base-300 shadow-sm p-6 lg:p-8">
+    <div class="bg-card rounded-xl border border-border shadow-sm p-6 lg:p-8">
       <ArticleForm mode="create" client:load />
     </div>
   </div>

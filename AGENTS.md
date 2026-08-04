@@ -1,5 +1,7 @@
 ## Development
 
+This project uses Bun as its package manager (`bun install`, `bun run <script>`) — do not use npm/yarn/pnpm.
+
 When starting the dev server, use background mode:
 
 ```

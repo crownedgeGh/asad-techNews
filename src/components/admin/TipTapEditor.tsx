@@ -1,9 +1,23 @@
 import React from 'react';
-import { useEditor, EditorContent } from '@tiptap/react';
+import { useEditor, EditorContent, type Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
 import Underline from '@tiptap/extension-underline';
+import {
+  Bold,
+  Italic,
+  Underline as UnderlineIcon,
+  Heading1,
+  Heading2,
+  Heading3,
+  List,
+  ListOrdered,
+  Quote,
+  Link as LinkIcon,
+  Image as ImageIcon,
+} from 'lucide-react';
+import { cn } from '../../lib/utils';
 
 interface TipTapEditorProps {
   initialContent?: string;
@@ -13,8 +27,9 @@ interface TipTapEditorProps {
 
 type ToolbarButton = {
   label: string;
-  action: (editor: ReturnType<typeof useEditor>) => void;
-  isActive?: (editor: ReturnType<typeof useEditor>) => boolean;
+  icon: React.ComponentType<{ className?: string }>;
+  action: (editor: Editor | null) => void;
+  isActive?: (editor: Editor | null) => boolean;
 };
 
 export default function TipTapEditor({
@@ -60,88 +75,67 @@ export default function TipTapEditor({
 
   const toolbarGroups: ToolbarButton[][] = [
     [
-      {
-        label: 'B',
-        action: (e) => e?.chain().focus().toggleBold().run(),
-        isActive: (e) => e?.isActive('bold') ?? false,
-      },
-      {
-        label: 'I',
-        action: (e) => e?.chain().focus().toggleItalic().run(),
-        isActive: (e) => e?.isActive('italic') ?? false,
-      },
-      {
-        label: 'U',
-        action: (e) => e?.chain().focus().toggleUnderline().run(),
-        isActive: (e) => e?.isActive('underline') ?? false,
-      },
+      { label: 'Bold', icon: Bold, action: (e) => e?.chain().focus().toggleBold().run(), isActive: (e) => e?.isActive('bold') ?? false },
+      { label: 'Italic', icon: Italic, action: (e) => e?.chain().focus().toggleItalic().run(), isActive: (e) => e?.isActive('italic') ?? false },
+      { label: 'Underline', icon: UnderlineIcon, action: (e) => e?.chain().focus().toggleUnderline().run(), isActive: (e) => e?.isActive('underline') ?? false },
     ],
     [
-      {
-        label: 'H1',
-        action: (e) => e?.chain().focus().toggleHeading({ level: 1 }).run(),
-        isActive: (e) => e?.isActive('heading', { level: 1 }) ?? false,
-      },
-      {
-        label: 'H2',
-        action: (e) => e?.chain().focus().toggleHeading({ level: 2 }).run(),
-        isActive: (e) => e?.isActive('heading', { level: 2 }) ?? false,
-      },
-      {
-        label: 'H3',
-        action: (e) => e?.chain().focus().toggleHeading({ level: 3 }).run(),
-        isActive: (e) => e?.isActive('heading', { level: 3 }) ?? false,
-      },
+      { label: 'Heading 1', icon: Heading1, action: (e) => e?.chain().focus().toggleHeading({ level: 1 }).run(), isActive: (e) => e?.isActive('heading', { level: 1 }) ?? false },
+      { label: 'Heading 2', icon: Heading2, action: (e) => e?.chain().focus().toggleHeading({ level: 2 }).run(), isActive: (e) => e?.isActive('heading', { level: 2 }) ?? false },
+      { label: 'Heading 3', icon: Heading3, action: (e) => e?.chain().focus().toggleHeading({ level: 3 }).run(), isActive: (e) => e?.isActive('heading', { level: 3 }) ?? false },
     ],
     [
-      {
-        label: '• List',
-        action: (e) => e?.chain().focus().toggleBulletList().run(),
-        isActive: (e) => e?.isActive('bulletList') ?? false,
-      },
-      {
-        label: '1. List',
-        action: (e) => e?.chain().focus().toggleOrderedList().run(),
-        isActive: (e) => e?.isActive('orderedList') ?? false,
-      },
-      {
-        label: '❝',
-        action: (e) => e?.chain().focus().toggleBlockquote().run(),
-        isActive: (e) => e?.isActive('blockquote') ?? false,
-      },
+      { label: 'Bullet List', icon: List, action: (e) => e?.chain().focus().toggleBulletList().run(), isActive: (e) => e?.isActive('bulletList') ?? false },
+      { label: 'Numbered List', icon: ListOrdered, action: (e) => e?.chain().focus().toggleOrderedList().run(), isActive: (e) => e?.isActive('orderedList') ?? false },
+      { label: 'Quote', icon: Quote, action: (e) => e?.chain().focus().toggleBlockquote().run(), isActive: (e) => e?.isActive('blockquote') ?? false },
     ],
   ];
 
   return (
-    <div className="border border-base-300 rounded-xl overflow-hidden bg-base-100">
+    <div className="border border-border rounded-xl overflow-hidden bg-card">
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-1 p-2 bg-base-200 border-b border-base-300">
+      <div className="flex flex-wrap items-center gap-1 p-2 bg-secondary/60 border-b border-border">
         {toolbarGroups.map((group, gi) => (
           <React.Fragment key={gi}>
-            {gi > 0 && <span className="w-px h-5 bg-base-300 mx-1" />}
-            {group.map((btn) => (
+            {gi > 0 && <span className="w-px h-5 bg-border mx-1" />}
+            {group.map(({ label, icon: Icon, action, isActive }) => (
               <button
-                key={btn.label}
+                key={label}
                 type="button"
+                title={label}
+                aria-label={label}
                 onMouseDown={(e) => {
                   e.preventDefault();
-                  btn.action(editor);
+                  action(editor);
                 }}
-                className={`btn btn-xs font-mono ${
-                  btn.isActive?.(editor) ? 'btn-primary' : 'btn-ghost'
-                }`}
+                className={cn(
+                  'inline-flex items-center justify-center h-7 w-7 rounded-md transition-colors',
+                  isActive?.(editor) ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-secondary'
+                )}
               >
-                {btn.label}
+                <Icon className="h-3.5 w-3.5" />
               </button>
             ))}
           </React.Fragment>
         ))}
-        <span className="w-px h-5 bg-base-300 mx-1" />
-        <button type="button" onMouseDown={(e) => { e.preventDefault(); setLink(); }} className="btn btn-xs btn-ghost font-mono">
-          🔗 Link
+        <span className="w-px h-5 bg-border mx-1" />
+        <button
+          type="button"
+          title="Link"
+          aria-label="Link"
+          onMouseDown={(e) => { e.preventDefault(); setLink(); }}
+          className="inline-flex items-center justify-center h-7 w-7 rounded-md text-foreground hover:bg-secondary transition-colors"
+        >
+          <LinkIcon className="h-3.5 w-3.5" />
         </button>
-        <button type="button" onMouseDown={(e) => { e.preventDefault(); addImage(); }} className="btn btn-xs btn-ghost font-mono">
-          🖼 Img
+        <button
+          type="button"
+          title="Image"
+          aria-label="Image"
+          onMouseDown={(e) => { e.preventDefault(); addImage(); }}
+          className="inline-flex items-center justify-center h-7 w-7 rounded-md text-foreground hover:bg-secondary transition-colors"
+        >
+          <ImageIcon className="h-3.5 w-3.5" />
         </button>
       </div>
 

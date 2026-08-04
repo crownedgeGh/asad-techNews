@@ -17,12 +17,11 @@
 
 # Tech Stack 
 
-- Same as used for public portal
-- Use daisy ui theme , to install follow this https://daisyui.com/docs/install/astro/, use theme name emerald
+- Same as used for public portal, ASTRO
 - All the pages should automatically reflect the changes whenever any action has done (post,edit,delete) rahther than manual refresh button is pressed
 - Use react icons
-- Use shadcn component for any popup banner anything, do not use alert box of browser
 - All the things/ui should be fully reponsive . An admin panel which can be easily maintained by mobile,tab and obvious web 
 - Make a common table component which can be used for all other pages in admin panel
 - Most important , admin panel should not collapse with public portal , it should have independent website (sometimes header,footer of public portal comes in admin panel)
+- For the tables of any page , if its on mobile and tab then show like a card 
 

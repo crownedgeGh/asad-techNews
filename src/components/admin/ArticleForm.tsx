@@ -1,6 +1,12 @@
 import React, { useState, useCallback } from 'react';
+import { toast } from 'sonner';
+import { Upload, X, Loader2 } from 'lucide-react';
 import TipTapEditor from './TipTapEditor';
-import { ToastProvider, useToast } from './Toast';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Button } from './ui/button';
+import { Switch } from './ui/switch';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from './ui/select';
 
 const CATEGORIES = [
   'AI', 'Hardware', 'Web Dev', 'Security', 'Design',
@@ -19,6 +25,7 @@ export interface ArticleData {
 
 interface ArticleFormProps {
   initialData?: ArticleData;
+  articleId?: number;
   mode: 'create' | 'edit';
 }
 
@@ -31,8 +38,8 @@ function slugify(text: string) {
     .replace(/-+/g, '-');
 }
 
-function ArticleFormInner({ initialData, mode }: ArticleFormProps) {
-  const { showToast } = useToast();
+export default function ArticleForm(props: ArticleFormProps) {
+  const { initialData, mode } = props;
   const [title, setTitle] = useState(initialData?.title ?? '');
   const [slug, setSlug] = useState(initialData?.slug ?? '');
   const [slugManual, setSlugManual] = useState(!!initialData?.slug);
@@ -42,6 +49,24 @@ function ArticleFormInner({ initialData, mode }: ArticleFormProps) {
   const [published, setPublished] = useState(initialData?.published ?? false);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  React.useEffect(() => {
+    if (mode === 'edit' && props.articleId) {
+      const stored = localStorage.getItem('admin_articles');
+      if (stored) {
+        const allArticles = JSON.parse(stored);
+        const article = allArticles.find((a: any) => a.id === props.articleId);
+        if (article) {
+          setTitle(article.title);
+          setSlug(article.slug);
+          setContent(article.content);
+          setCategory(article.category);
+          setCoverImage(article.coverImage ?? '');
+          setPublished(article.published);
+        }
+      }
+    }
+  }, [mode, props.articleId]);
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -67,9 +92,9 @@ function ArticleFormInner({ initialData, mode }: ArticleFormProps) {
       if (!res.ok) throw new Error('Upload failed');
       const { url } = await res.json();
       setCoverImage(url);
-      showToast('Cover image uploaded', 'success');
+      toast.success('Cover image uploaded');
     } catch {
-      showToast('Failed to upload image', 'error');
+      toast.error('Failed to upload image');
     } finally {
       setUploading(false);
     }
@@ -77,40 +102,47 @@ function ArticleFormInner({ initialData, mode }: ArticleFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) { showToast('Title is required', 'error'); return; }
-    if (!slug.trim()) { showToast('Slug is required', 'error'); return; }
-    if (!content.trim() || content === '<p></p>') { showToast('Content is required', 'error'); return; }
-    if (!category) { showToast('Category is required', 'error'); return; }
+    if (!title.trim()) { toast.error('Title is required'); return; }
+    if (!slug.trim()) { toast.error('Slug is required'); return; }
+    if (!content.trim() || content === '<p></p>') { toast.error('Content is required'); return; }
+    if (!category) { toast.error('Category is required'); return; }
 
     setSubmitting(true);
     try {
-      const url = mode === 'edit'
-        ? `/api/admin/articles/${initialData!.id}`
-        : '/api/admin/articles';
-      const method = mode === 'edit' ? 'PUT' : 'POST';
+      const stored = localStorage.getItem('admin_articles');
+      let allArticles = stored ? JSON.parse(stored) : [];
 
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, slug, content, category, coverImage, published }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error ?? 'Failed to save article');
+      if (mode === 'edit') {
+        const id = initialData?.id || props.articleId;
+        const index = allArticles.findIndex((a: any) => a.id === id);
+        if (index !== -1) {
+          allArticles[index] = {
+            ...allArticles[index],
+            title, slug, content, category, coverImage, published,
+            updatedAt: new Date().toISOString()
+          };
+        }
+      } else {
+        const newArticle = {
+          id: Date.now(),
+          title, slug, content, category, coverImage, published,
+          views: 0, likes: 0, commentsCount: 0,
+          sortOrder: allArticles.length > 0 ? Math.max(...allArticles.map((a: any) => a.sortOrder ?? 0)) + 1 : 1,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        allArticles.unshift(newArticle);
       }
 
-      showToast(
-        mode === 'edit' ? 'Article updated successfully!' : 'Article created successfully!',
-        'success'
-      );
+      localStorage.setItem('admin_articles', JSON.stringify(allArticles));
 
-      // Redirect after short delay for toast to show
+      toast.success(mode === 'edit' ? 'Article updated successfully!' : 'Article created successfully!');
+
       setTimeout(() => {
         window.location.href = '/admin/articles';
       }, 1000);
     } catch (err: any) {
-      showToast(err.message ?? 'Something went wrong', 'error');
+      toast.error(err.message ?? 'Something went wrong');
     } finally {
       setSubmitting(false);
     }
@@ -119,34 +151,33 @@ function ArticleFormInner({ initialData, mode }: ArticleFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Title */}
-      <div className="form-control">
-        <label className="label"><span className="label-text font-semibold">Title *</span></label>
-        <input
-          type="text"
+      <div className="space-y-2">
+        <Label htmlFor="article-title">Title *</Label>
+        <Input
           id="article-title"
           value={title}
           onChange={handleTitleChange}
           placeholder="Enter article title..."
-          className="input input-bordered w-full"
           required
         />
       </div>
 
       {/* Slug */}
-      <div className="form-control">
-        <label className="label">
-          <span className="label-text font-semibold">Slug *</span>
-          <span className="label-text-alt text-base-content/40">Auto-generated from title</span>
-        </label>
-        <div className="join w-full">
-          <span className="join-item btn btn-disabled no-animation px-3 text-base-content/40 text-sm">/article/</span>
-          <input
-            type="text"
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Label htmlFor="article-slug">Slug *</Label>
+          <span className="text-xs text-muted-foreground">Auto-generated from title</span>
+        </div>
+        <div className="flex w-full">
+          <span className="inline-flex items-center rounded-l-md border border-r-0 border-input bg-secondary px-3 text-sm text-muted-foreground">
+            /article/
+          </span>
+          <Input
             id="article-slug"
             value={slug}
             onChange={handleSlugChange}
             placeholder="article-slug"
-            className="input input-bordered join-item w-full"
+            className="rounded-l-none"
             required
           />
         </div>
@@ -154,95 +185,75 @@ function ArticleFormInner({ initialData, mode }: ArticleFormProps) {
 
       {/* Category + Published row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="form-control">
-          <label className="label"><span className="label-text font-semibold">Category *</span></label>
-          <select
-            id="article-category"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className="select select-bordered w-full"
-            required
-          >
-            <option value="" disabled>Select category…</option>
-            {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
+        <div className="space-y-2">
+          <Label htmlFor="article-category">Category *</Label>
+          <Select value={category} onValueChange={setCategory}>
+            <SelectTrigger id="article-category">
+              <SelectValue placeholder="Select category…" />
+            </SelectTrigger>
+            <SelectContent>
+              {CATEGORIES.map((c) => (
+                <SelectItem key={c} value={c}>
+                  {c}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-        <div className="form-control">
-          <label className="label"><span className="label-text font-semibold">Status</span></label>
-          <label className="label cursor-pointer gap-4 justify-start">
-            <input
-              type="checkbox"
-              id="article-published"
-              checked={published}
-              onChange={(e) => setPublished(e.target.checked)}
-              className="toggle toggle-success"
-            />
-            <span className="label-text">{published ? 'Published' : 'Draft'}</span>
-          </label>
+        <div className="space-y-2">
+          <Label htmlFor="article-published">Status</Label>
+          <div className="flex items-center gap-3 h-9">
+            <Switch id="article-published" checked={published} onCheckedChange={setPublished} />
+            <span className="text-sm text-foreground">{published ? 'Published' : 'Draft'}</span>
+          </div>
         </div>
       </div>
 
       {/* Cover Image */}
-      <div className="form-control">
-        <label className="label"><span className="label-text font-semibold">Cover Image</span></label>
+      <div className="space-y-2">
+        <Label>Cover Image</Label>
         <div className="flex items-center gap-3 flex-wrap">
-          <label className="btn btn-outline btn-sm gap-2 cursor-pointer">
-            {uploading ? (
-              <><span className="loading loading-spinner loading-xs"></span> Uploading…</>
-            ) : (
-              <><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg> Upload Image</>
-            )}
-            <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploading} />
-          </label>
+          <Button variant="outline" size="sm" asChild className="cursor-pointer" disabled={uploading}>
+            <label>
+              {uploading ? <Loader2 className="animate-spin" /> : <Upload />}
+              {uploading ? 'Uploading…' : 'Upload Image'}
+              <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploading} />
+            </label>
+          </Button>
           {coverImage && (
             <div className="flex items-center gap-2">
-              <img src={coverImage} alt="Cover preview" className="h-12 w-20 object-cover rounded-lg border border-base-300" />
-              <button type="button" onClick={() => setCoverImage('')} className="btn btn-ghost btn-xs text-error">✕</button>
+              <img src={coverImage} alt="Cover preview" className="h-12 w-20 object-cover rounded-lg border border-border" />
+              <Button type="button" variant="ghost" size="icon-sm" className="text-destructive" onClick={() => setCoverImage('')}>
+                <X />
+              </Button>
             </div>
           )}
           {!coverImage && (
-            <input
-              type="text"
+            <Input
               value={coverImage}
               onChange={(e) => setCoverImage(e.target.value)}
               placeholder="Or paste image URL…"
-              className="input input-bordered input-sm flex-1 min-w-48"
+              className="flex-1 min-w-48"
             />
           )}
         </div>
       </div>
 
       {/* TipTap Content */}
-      <div className="form-control">
-        <label className="label"><span className="label-text font-semibold">Content *</span></label>
-        <TipTapEditor
-          initialContent={content}
-          onChange={setContent}
-          placeholder="Start writing your article…"
-        />
+      <div className="space-y-2">
+        <Label>Content *</Label>
+        <TipTapEditor initialContent={content} onChange={setContent} placeholder="Start writing your article…" />
       </div>
 
       {/* Actions */}
       <div className="flex items-center gap-3 justify-end pt-2">
-        <a href="/admin/articles" className="btn btn-ghost">Cancel</a>
-        <button
-          type="submit"
-          id="article-submit"
-          disabled={submitting}
-          className="btn btn-primary gap-2"
-        >
-          {submitting && <span className="loading loading-spinner loading-xs"></span>}
+        <Button variant="ghost" asChild>
+          <a href="/admin/articles">Cancel</a>
+        </Button>
+        <Button type="submit" id="article-submit" loading={submitting}>
           {mode === 'edit' ? 'Update Article' : published ? 'Publish Article' : 'Save Draft'}
-        </button>
+        </Button>
       </div>
     </form>
-  );
-}
-
-export default function ArticleForm(props: ArticleFormProps) {
-  return (
-    <ToastProvider>
-      <ArticleFormInner {...props} />
-    </ToastProvider>
   );
 }

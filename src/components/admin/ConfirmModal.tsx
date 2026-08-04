@@ -1,4 +1,6 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from './ui/dialog';
+import { Button } from './ui/button';
 
 interface ConfirmModalProps {
   open: boolean;
@@ -19,38 +21,22 @@ export function ConfirmModal({
   onConfirm,
   onCancel,
 }: ConfirmModalProps) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
-
-  useEffect(() => {
-    if (open) {
-      dialogRef.current?.showModal();
-    } else {
-      dialogRef.current?.close();
-    }
-  }, [open]);
-
   return (
-    <dialog ref={dialogRef} className="modal modal-bottom sm:modal-middle">
-      <div className="modal-box">
-        <h3 className="font-bold text-lg mb-2">Confirm Action</h3>
-        <p className="text-base-content/80">{message}</p>
-        <div className="modal-action">
-          <button className="btn btn-ghost" onClick={onCancel}>
+    <Dialog open={open} onOpenChange={(next) => !next && onCancel()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Confirm Action</DialogTitle>
+          <DialogDescription>{message}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onCancel}>
             {cancelLabel}
-          </button>
-          <button
-            className={`btn ${variant === 'danger' ? 'btn-error' : 'btn-primary'}`}
-            onClick={() => {
-              onConfirm();
-            }}
-          >
+          </Button>
+          <Button variant={variant === 'danger' ? 'destructive' : 'default'} onClick={onConfirm}>
             {confirmLabel}
-          </button>
-        </div>
-      </div>
-      <form method="dialog" className="modal-backdrop">
-        <button onClick={onCancel}>close</button>
-      </form>
-    </dialog>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

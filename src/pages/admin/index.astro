@@ -39,101 +39,98 @@ function formatDate(date: Date) {
     month: 'short', day: 'numeric', year: 'numeric'
   });
 }
+
+const statCards = [
+  {
+    label: 'Total Articles',
+    key: 'totalArticles',
+    value: stats?.totalArticles ?? 0,
+    desc: 'Published & drafts',
+    color: 'text-primary',
+    icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
+  },
+  {
+    label: 'Total Views',
+    key: 'totalViews',
+    value: (stats?.totalViews ?? 0).toLocaleString(),
+    desc: 'Across all articles',
+    color: 'text-secondary-foreground',
+    icon: 'M15 12a3 3 0 11-6 0 3 3 0 016 0zM2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z',
+  },
+  {
+    label: 'Total Likes',
+    key: 'totalLikes',
+    value: (stats?.totalLikes ?? 0).toLocaleString(),
+    desc: 'Reader engagement',
+    color: 'text-accent-foreground',
+    icon: 'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z',
+  },
+  {
+    label: 'Total Comments',
+    key: 'totalComments',
+    value: (stats?.totalComments ?? 0).toLocaleString(),
+    desc: 'Reader responses',
+    color: 'text-warning',
+    icon: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z',
+  },
+];
 ---
 
 <AdminLayout title="Dashboard">
   <div class="space-y-8">
     <!-- Page header -->
     <div>
-      <h1 class="text-2xl font-bold text-base-content">Dashboard</h1>
-      <p class="text-base-content/60 text-sm mt-1">Overview of The Lumen Tech</p>
+      <h1 class="text-2xl font-bold text-foreground">Dashboard</h1>
+      <p class="text-muted-foreground text-sm mt-1">Overview of The Lumen Tech</p>
     </div>
 
     <!-- DB unavailable warning -->
     {dbError && (
-      <div class="alert alert-warning">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <div class="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-foreground" data-db-warning>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0 text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
         </svg>
-        <span><strong>Database not connected.</strong> Set <code>DATABASE_URL</code> in your <code>.env</code> file and restart the dev server to load real data.</span>
+        <span><strong>Database not connected.</strong> Set <code class="text-xs">DATABASE_URL</code> in your <code class="text-xs">.env</code> file and restart the dev server to load real data.</span>
       </div>
     )}
 
     <!-- Stats grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-      <!-- Total Articles -->
-      <div class="stat bg-base-100 rounded-xl border border-base-300 shadow-sm">
-        <div class="stat-figure text-primary">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4" data-stats-grid>
+      {statCards.map((card) => (
+        <div class="rounded-xl border border-border bg-card shadow-sm p-5 flex flex-col gap-2">
+          <div class={`h-8 w-8 ${card.color}`}>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={card.icon} />
+            </svg>
+          </div>
+          <div class="text-sm text-muted-foreground">{card.label}</div>
+          <div class={`text-3xl font-bold ${card.color} stat-value`} data-stat-key={card.key}>{card.value}</div>
+          <div class="text-xs text-muted-foreground">{card.desc}</div>
         </div>
-        <div class="stat-title text-base-content/60">Total Articles</div>
-        <div class="stat-value text-primary">{stats?.totalArticles ?? 0}</div>
-        <div class="stat-desc">Published & drafts</div>
-      </div>
-
-      <!-- Total Views -->
-      <div class="stat bg-base-100 rounded-xl border border-base-300 shadow-sm">
-        <div class="stat-figure text-secondary">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-          </svg>
-        </div>
-        <div class="stat-title text-base-content/60">Total Views</div>
-        <div class="stat-value text-secondary">{(stats?.totalViews ?? 0).toLocaleString()}</div>
-        <div class="stat-desc">Across all articles</div>
-      </div>
-
-      <!-- Total Likes -->
-      <div class="stat bg-base-100 rounded-xl border border-base-300 shadow-sm">
-        <div class="stat-figure text-accent">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-          </svg>
-        </div>
-        <div class="stat-title text-base-content/60">Total Likes</div>
-        <div class="stat-value text-accent">{(stats?.totalLikes ?? 0).toLocaleString()}</div>
-        <div class="stat-desc">Reader engagement</div>
-      </div>
-
-      <!-- Total Comments -->
-      <div class="stat bg-base-100 rounded-xl border border-base-300 shadow-sm">
-        <div class="stat-figure text-warning">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-          </svg>
-        </div>
-        <div class="stat-title text-base-content/60">Total Comments</div>
-        <div class="stat-value text-warning">{(stats?.totalComments ?? 0).toLocaleString()}</div>
-        <div class="stat-desc">Reader responses</div>
-      </div>
+      ))}
     </div>
 
     <!-- Recent Activity -->
-    <div class="bg-base-100 rounded-xl border border-base-300 shadow-sm overflow-hidden">
-      <div class="flex items-center justify-between px-6 py-4 border-b border-base-300">
-        <h2 class="font-semibold text-base-content">Recent Activity</h2>
-        <a href="/admin/articles" class="btn btn-ghost btn-xs text-primary">View all →</a>
+    <div class="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-border">
+        <h2 class="font-semibold text-foreground">Recent Activity</h2>
+        <a href="/admin/articles" class="text-sm font-medium text-primary hover:underline">View all →</a>
       </div>
-      <div class="divide-y divide-base-200">
+      <div class="divide-y divide-border" data-recent-list>
         {recentArticles.length === 0 ? (
-          <p class="text-center py-12 text-base-content/40">No articles yet. <a href="/admin/articles/new" class="link link-primary">Create the first one!</a></p>
+          <p class="text-center py-12 text-muted-foreground">No articles yet. <a href="/admin/articles/new" class="text-primary hover:underline">Create the first one!</a></p>
         ) : (
           recentArticles.map((article) => (
-            <div class="flex items-center justify-between px-6 py-4 hover:bg-base-50 transition-colors">
-              <div class="flex items-center gap-3 min-w-0">
-                <div class="min-w-0">
-                  <p class="font-medium text-sm text-base-content truncate">{article.title}</p>
-                  <p class="text-xs text-base-content/50 mt-0.5">{article.category} · {formatDate(article.createdAt)}</p>
-                </div>
+            <div class="flex items-center justify-between px-6 py-4 hover:bg-secondary/40 transition-colors">
+              <div class="min-w-0">
+                <p class="font-medium text-sm text-foreground truncate">{article.title}</p>
+                <p class="text-xs text-muted-foreground mt-0.5">{article.category} · {formatDate(article.createdAt)}</p>
               </div>
               <div class="flex items-center gap-3 flex-shrink-0">
-                <span class={`badge badge-sm ${article.published ? 'badge-success' : 'badge-warning'}`}>
+                <span class={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${article.published ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}>
                   {article.published ? 'Published' : 'Draft'}
                 </span>
-                <a href={`/admin/articles/${article.id}/edit`} class="btn btn-ghost btn-xs">Edit</a>
+                <a href={`/admin/articles/${article.id}/edit`} class="text-sm font-medium text-muted-foreground hover:text-foreground">Edit</a>
               </div>
             </div>
           ))
@@ -143,33 +140,81 @@ function formatDate(date: Date) {
 
     <!-- Quick actions -->
     <div class="flex gap-3 flex-wrap">
-      <a href="/admin/articles/new" class="btn btn-primary gap-2">
+      <a href="/admin/articles/new" class="inline-flex items-center gap-2 rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium shadow-sm hover:bg-primary/90 transition-colors">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
         Post Article
       </a>
-      <a href="/admin/articles" class="btn btn-outline gap-2">
+      <a href="/admin/articles" class="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium shadow-sm hover:bg-secondary transition-colors">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
         </svg>
         Manage Articles
       </a>
     </div>
-
-    <!-- DaisyUI Theme Test -->
-    <div class="bg-base-100 rounded-xl border border-base-300 shadow-sm p-6">
-      <h2 class="font-semibold text-base-content mb-4 text-sm uppercase tracking-wider opacity-60">DaisyUI emerald — Button Variants</h2>
-      <div class="flex flex-wrap gap-3">
-        <button class="btn btn-neutral">Neutral</button>
-        <button class="btn btn-primary">Primary</button>
-        <button class="btn btn-secondary">Secondary</button>
-        <button class="btn btn-accent">Accent</button>
-        <button class="btn btn-info">Info</button>
-        <button class="btn btn-success">Success</button>
-        <button class="btn btn-warning">Warning</button>
-        <button class="btn btn-error">Error</button>
-      </div>
-    </div>
   </div>
+
+  <script is:inline>
+    // Client-side script to read from localStorage and populate stats temporarily
+    try {
+      const stored = localStorage.getItem('admin_articles');
+      if (stored) {
+        const allArticles = JSON.parse(stored);
+
+        let totalViews = 0;
+        let totalLikes = 0;
+        let totalComments = 0;
+
+        allArticles.forEach(a => {
+          totalViews += a.views || 0;
+          totalLikes += a.likes || 0;
+          totalComments += a.commentsCount || 0;
+        });
+
+        const statMap = {
+          totalArticles: allArticles.length.toString(),
+          totalViews: totalViews.toLocaleString(),
+          totalLikes: totalLikes.toLocaleString(),
+          totalComments: totalComments.toLocaleString(),
+        };
+        document.querySelectorAll('[data-stat-key]').forEach((el) => {
+          const key = el.getAttribute('data-stat-key');
+          if (key && statMap[key] !== undefined) el.textContent = statMap[key];
+        });
+
+        // Hide db error warning since we're using localStorage
+        const warning = document.querySelector('[data-db-warning]');
+        if (warning) warning.style.display = 'none';
+
+        // Update recent activity
+        const recentList = document.querySelector('[data-recent-list]');
+        if (recentList && allArticles.length > 0) {
+          const sorted = [...allArticles].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()).slice(0, 5);
+
+          let html = '';
+          sorted.forEach(article => {
+            const dateStr = new Date(article.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            html += `
+              <div class="flex items-center justify-between px-6 py-4 hover:bg-secondary/40 transition-colors">
+                <div class="min-w-0">
+                  <p class="font-medium text-sm text-foreground truncate">${article.title}</p>
+                  <p class="text-xs text-muted-foreground mt-0.5">${article.category} · ${dateStr}</p>
+                </div>
+                <div class="flex items-center gap-3 flex-shrink-0">
+                  <span class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${article.published ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}">
+                    ${article.published ? 'Published' : 'Draft'}
+                  </span>
+                  <a href="/admin/articles/${article.id}/edit" class="text-sm font-medium text-muted-foreground hover:text-foreground">Edit</a>
+                </div>
+              </div>
+            `;
+          });
+          recentList.innerHTML = html;
+        }
+      }
+    } catch(e) {
+      console.error("Failed to load local articles", e);
+    }
+  </script>
 </AdminLayout>
