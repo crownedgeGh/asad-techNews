@@ -37,7 +37,7 @@ type ToolbarButton = {
 export default function TipTapEditor({
   initialContent = '',
   onChange,
-  placeholder = 'Start writing your article...',
+  placeholder = '',
 }: TipTapEditorProps) {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [uploadingImage, setUploadingImage] = React.useState(false);

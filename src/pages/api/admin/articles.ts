@@ -56,6 +56,23 @@ export const GET: APIRoute = async ({ url }) => {
   }
 };
 
+export const DELETE: APIRoute = async () => {
+  try {
+    await db.delete(articles);
+
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (err) {
+    console.error('DELETE /api/admin/articles error:', err);
+    return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+};
+
 export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json();

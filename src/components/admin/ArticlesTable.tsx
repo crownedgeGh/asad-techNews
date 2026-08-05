@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
-import { Eye, Pencil, Trash2, MoreVertical, ArrowUp, ArrowDown, Search, ImageOff } from 'lucide-react';
+import { Eye, Pencil, Trash2, MoreVertical, ArrowUp, ArrowDown, Search, ImageOff, Trash } from 'lucide-react';
 import { AdminTable, type Column } from './AdminTable';
 import { ConfirmModal } from './ConfirmModal';
 import { Input } from './ui/input';
@@ -39,6 +39,7 @@ export default function ArticlesTable() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<Article | null>(null);
+  const [deleteAllOpen, setDeleteAllOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState('all');
   const pageSize = 15;
@@ -78,6 +79,21 @@ export default function ArticlesTable() {
       toast.error('Failed to delete article');
     } finally {
       setDeleteTarget(null);
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    try {
+      const res = await fetch('/api/admin/articles', { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete all articles');
+
+      toast.success('All articles deleted');
+      setPage(1);
+      fetchArticles(1, { silent: true });
+    } catch {
+      toast.error('Failed to delete all articles');
+    } finally {
+      setDeleteAllOpen(false);
     }
   };
 
@@ -217,6 +233,15 @@ export default function ArticlesTable() {
             ))}
           </SelectContent>
         </Select>
+
+        <Button
+          variant="outline"
+          className="text-error hover:text-error w-full sm:w-auto sm:ml-auto"
+          disabled={total === 0}
+          onClick={() => setDeleteAllOpen(true)}
+        >
+          <Trash /> Delete All
+        </Button>
       </div>
 
       <AdminTable
@@ -324,6 +349,15 @@ export default function ArticlesTable() {
         variant="danger"
         onConfirm={handleDelete}
         onCancel={() => setDeleteTarget(null)}
+      />
+
+      <ConfirmModal
+        open={deleteAllOpen}
+        message={`Are you sure you want to permanently delete all ${total} article${total === 1 ? '' : 's'}? This action cannot be undone.`}
+        confirmLabel="Delete All"
+        variant="danger"
+        onConfirm={handleDeleteAll}
+        onCancel={() => setDeleteAllOpen(false)}
       />
     </>
   );
