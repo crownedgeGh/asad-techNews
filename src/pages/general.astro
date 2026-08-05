@@ -1,0 +1,46 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ArticleCard from '../components/ArticleCard.astro';
+import { db } from '../db';
+import { articles } from '../db/schema';
+import { and, eq, asc, desc } from 'drizzle-orm';
+import { formatDate, formatViews, excerptFromContent } from '../lib/format';
+
+export const prerender = false;
+
+let categoryArticles: (typeof articles.$inferSelect)[] = [];
+try {
+  categoryArticles = await db
+    .select()
+    .from(articles)
+    .where(and(eq(articles.published, true), eq(articles.category, 'General News')))
+    .orderBy(asc(articles.sortOrder), desc(articles.createdAt))
+    .limit(30);
+} catch (e) {
+  console.error('Failed to load General News articles:', e);
+}
+---
+
+<Layout title="General News">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <h1 class="text-3xl font-heading font-bold text-slate-900 dark:text-white mb-8 uppercase border-b border-slate-300 dark:border-slate-800 pb-3">
+      General <span class="text-primary font-light">News</span>
+    </h1>
+    <div class="flex flex-col max-w-4xl">
+      {categoryArticles.length === 0 && (
+        <p class="text-slate-500 dark:text-slate-400 py-12 text-center">No articles in this category yet.</p>
+      )}
+      {categoryArticles.map(article => (
+        <ArticleCard
+          title={article.title}
+          excerpt={excerptFromContent(article.content)}
+          imageUrl={article.coverImage || '/logo.png'}
+          category={article.category}
+          slug={article.slug}
+          date={formatDate(article.createdAt)}
+          views={formatViews(article.views)}
+        />
+      ))}
+    </div>
+  </div>
+</Layout>

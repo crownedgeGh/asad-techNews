@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { db } from '../../../db';
 import { articles } from '../../../db/schema';
-import { desc, sql, eq } from 'drizzle-orm';
+import { and, asc, desc, ilike, or, sql, eq } from 'drizzle-orm';
 
 const PAGE_SIZE = 15;
 
@@ -9,15 +9,38 @@ export const GET: APIRoute = async ({ url }) => {
   try {
     const page = parseInt(url.searchParams.get('page') || '1', 10);
     const offset = (page - 1) * PAGE_SIZE;
+    const search = url.searchParams.get('search')?.trim() || '';
+    const filter = url.searchParams.get('filter') || 'all';
+
+    const conditions = [];
+    if (search) {
+      conditions.push(
+        or(ilike(articles.title, `%${search}%`), ilike(articles.content, `%${search}%`))
+      );
+    }
+    if (filter === 'published') {
+      conditions.push(eq(articles.published, true));
+    } else if (filter === 'draft') {
+      conditions.push(eq(articles.published, false));
+    }
+    const where = conditions.length ? and(...conditions) : undefined;
+
+    const orderBy =
+      filter === 'most_viewed'
+        ? [desc(articles.views)]
+        : filter === 'most_liked'
+        ? [desc(articles.likes)]
+        : [asc(articles.sortOrder), desc(articles.createdAt)];
 
     const [rows, [{ count }]] = await Promise.all([
       db
         .select()
         .from(articles)
-        .orderBy(articles.sortOrder, desc(articles.createdAt))
+        .where(where)
+        .orderBy(...orderBy)
         .limit(PAGE_SIZE)
         .offset(offset),
-      db.select({ count: sql<number>`count(*)::int` }).from(articles),
+      db.select({ count: sql<number>`count(*)::int` }).from(articles).where(where),
     ]);
 
     return new Response(
@@ -69,7 +92,7 @@ export const POST: APIRoute = async ({ request }) => {
     });
   } catch (err: any) {
     console.error('POST /api/admin/articles error:', err);
-    if (err?.message?.includes('unique')) {
+    if (err?.cause?.code === '23505' || err?.code === '23505') {
       return new Response(JSON.stringify({ error: 'Slug already exists' }), {
         status: 409,
         headers: { 'Content-Type': 'application/json' },

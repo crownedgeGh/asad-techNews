@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
-import { Eye, Pencil, Trash2, RotateCcw, MoreVertical, ArrowUp, ArrowDown, Search, ImageOff } from 'lucide-react';
+import { Eye, Pencil, Trash2, MoreVertical, ArrowUp, ArrowDown, Search, ImageOff } from 'lucide-react';
 import { AdminTable, type Column } from './AdminTable';
 import { ConfirmModal } from './ConfirmModal';
 import { Input } from './ui/input';
@@ -23,14 +23,12 @@ interface Article {
   createdAt: string;
   content?: string;
   coverImage?: string;
-  isRemoved?: boolean;
 }
 
 const FILTERS = [
   { value: 'all', label: 'All Articles' },
   { value: 'published', label: 'Published' },
   { value: 'draft', label: 'Draft' },
-  { value: 'removed', label: 'Removed (Trash)' },
   { value: 'most_viewed', label: 'Most Viewed' },
   { value: 'most_liked', label: 'Most Liked' },
 ];
@@ -45,47 +43,22 @@ export default function ArticlesTable() {
   const [filter, setFilter] = useState('all');
   const pageSize = 15;
 
-  const fetchArticles = useCallback(async (p: number) => {
-    setLoading(true);
+  const fetchArticles = useCallback(async (p: number, opts: { silent?: boolean } = {}) => {
+    if (!opts.silent) setLoading(true);
     try {
-      const stored = localStorage.getItem('admin_articles');
-      let allArticles: Article[] = stored ? JSON.parse(stored) : [];
+      const params = new URLSearchParams({ page: String(p), filter });
+      if (searchQuery.trim()) params.set('search', searchQuery.trim());
 
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        allArticles = allArticles.filter(
-          (a) => a.title.toLowerCase().includes(query) || (a.content && a.content.toLowerCase().includes(query))
-        );
-      }
+      const res = await fetch(`/api/admin/articles?${params.toString()}`);
+      if (!res.ok) throw new Error('Failed to load articles');
+      const data = await res.json();
 
-      if (filter === 'removed') {
-        allArticles = allArticles.filter((a) => a.isRemoved);
-      } else {
-        allArticles = allArticles.filter((a) => !a.isRemoved);
-        if (filter === 'published') {
-          allArticles = allArticles.filter((a) => a.published);
-        } else if (filter === 'draft') {
-          allArticles = allArticles.filter((a) => !a.published);
-        }
-      }
-
-      if (filter === 'most_viewed') {
-        allArticles.sort((a, b) => (b.views || 0) - (a.views || 0));
-      } else if (filter === 'most_liked') {
-        allArticles.sort((a, b) => (b.likes || 0) - (a.likes || 0));
-      } else {
-        allArticles.sort((a, b) => (a.sortOrder ?? a.id) - (b.sortOrder ?? b.id));
-      }
-
-      const start = (p - 1) * pageSize;
-      const paginated = allArticles.slice(start, start + pageSize);
-
-      setArticles(paginated);
-      setTotal(allArticles.length);
+      setArticles(data.articles);
+      setTotal(data.total);
     } catch {
-      toast.error('Failed to load articles from local storage');
+      toast.error('Failed to load articles');
     } finally {
-      setLoading(false);
+      if (!opts.silent) setLoading(false);
     }
   }, [searchQuery, filter]);
 
@@ -96,27 +69,11 @@ export default function ArticlesTable() {
   const handleDelete = async () => {
     if (!deleteTarget) return;
     try {
-      const stored = localStorage.getItem('admin_articles');
-      let allArticles: Article[] = stored ? JSON.parse(stored) : [];
+      const res = await fetch(`/api/admin/articles/${deleteTarget.id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete article');
 
-      if (filter === 'removed') {
-        allArticles = allArticles.filter((a) => a.id !== deleteTarget.id);
-      } else {
-        const index = allArticles.findIndex((a) => a.id === deleteTarget.id);
-        if (index !== -1) {
-          allArticles[index].isRemoved = true;
-        }
-      }
-
-      localStorage.setItem('admin_articles', JSON.stringify(allArticles));
-
-      if (filter === 'removed') {
-        setArticles((prev) => prev.filter((a) => a.id !== deleteTarget.id));
-        setTotal((t) => t - 1);
-      } else {
-        fetchArticles(page);
-      }
-      toast.success(filter === 'removed' ? `"${deleteTarget.title}" permanently deleted` : `"${deleteTarget.title}" removed`);
+      toast.success(`"${deleteTarget.title}" deleted`);
+      fetchArticles(page, { silent: true });
     } catch {
       toast.error('Failed to delete article');
     } finally {
@@ -124,43 +81,15 @@ export default function ArticlesTable() {
     }
   };
 
-  const handleRestore = async (article: Article) => {
-    try {
-      const stored = localStorage.getItem('admin_articles');
-      let allArticles: Article[] = stored ? JSON.parse(stored) : [];
-
-      const index = allArticles.findIndex((a) => a.id === article.id);
-      if (index !== -1) {
-        allArticles[index].isRemoved = false;
-        localStorage.setItem('admin_articles', JSON.stringify(allArticles));
-        fetchArticles(page);
-        toast.success(`"${article.title}" restored`);
-      }
-    } catch {
-      toast.error('Failed to restore article');
-    }
-  };
-
   const handleReorder = async (article: Article, direction: 'up' | 'down') => {
     try {
-      const stored = localStorage.getItem('admin_articles');
-      let allArticles: Article[] = stored ? JSON.parse(stored) : [];
-
-      const index = allArticles.findIndex((a) => a.id === article.id);
-      if (index === -1) return;
-
-      if (direction === 'up' && index > 0) {
-        const temp = allArticles[index].sortOrder;
-        allArticles[index].sortOrder = allArticles[index - 1].sortOrder;
-        allArticles[index - 1].sortOrder = temp;
-      } else if (direction === 'down' && index < allArticles.length - 1) {
-        const temp = allArticles[index].sortOrder;
-        allArticles[index].sortOrder = allArticles[index + 1].sortOrder;
-        allArticles[index + 1].sortOrder = temp;
-      }
-
-      localStorage.setItem('admin_articles', JSON.stringify(allArticles));
-      await fetchArticles(page);
+      const res = await fetch(`/api/admin/articles/${article.id}/reorder`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ direction }),
+      });
+      if (!res.ok) throw new Error('Failed to reorder article');
+      await fetchArticles(page, { silent: true });
     } catch {
       toast.error('Failed to reorder article');
     }
@@ -212,51 +141,38 @@ export default function ArticlesTable() {
       header: 'Actions',
       render: (a, index) => (
         <div className="flex items-center gap-1 flex-wrap justify-end" onClick={(e) => e.stopPropagation()}>
-          {a.isRemoved ? (
-            <>
-              <Button variant="ghost" size="xs" className="text-success" onClick={() => handleRestore(a)}>
-                <RotateCcw /> Restore
-              </Button>
-              <Button variant="ghost" size="xs" className="text-error" onClick={() => setDeleteTarget(a)}>
-                <Trash2 /> Delete
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button variant="ghost" size="xs" asChild>
-                <a href={`/admin/articles/${a.id}`}>
-                  <Eye /> View
-                </a>
-              </Button>
-              <Button variant="ghost" size="xs" asChild>
-                <a href={`/admin/articles/${a.id}/edit`}>
-                  <Pencil /> Edit
-                </a>
-              </Button>
-              <Button variant="ghost" size="xs" className="text-error" onClick={() => setDeleteTarget(a)}>
-                <Trash2 /> Remove
-              </Button>
-              {canReorder && (
-                <div className="flex flex-col gap-0.5 ml-1">
-                  <button
-                    onClick={() => handleReorder(a, 'up')}
-                    disabled={index === 0}
-                    className="text-base-content/60 hover:text-base-content disabled:opacity-30 disabled:pointer-events-none"
-                    title="Move up"
-                  >
-                    <ArrowUp className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    onClick={() => handleReorder(a, 'down')}
-                    disabled={index === articles.length - 1}
-                    className="text-base-content/60 hover:text-base-content disabled:opacity-30 disabled:pointer-events-none"
-                    title="Move down"
-                  >
-                    <ArrowDown className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              )}
-            </>
+          <Button variant="ghost" size="xs" asChild>
+            <a href={`/admin/articles/${a.id}`}>
+              <Eye /> View
+            </a>
+          </Button>
+          <Button variant="ghost" size="xs" asChild>
+            <a href={`/admin/articles/${a.id}/edit`}>
+              <Pencil /> Edit
+            </a>
+          </Button>
+          <Button variant="ghost" size="xs" className="text-error" onClick={() => setDeleteTarget(a)}>
+            <Trash2 /> Delete
+          </Button>
+          {canReorder && (
+            <div className="flex flex-col gap-0.5 ml-1">
+              <button
+                onClick={() => handleReorder(a, 'up')}
+                disabled={index === 0}
+                className="text-base-content/60 hover:text-base-content disabled:opacity-30 disabled:pointer-events-none"
+                title="Move up"
+              >
+                <ArrowUp className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={() => handleReorder(a, 'down')}
+                disabled={index === articles.length - 1}
+                className="text-base-content/60 hover:text-base-content disabled:opacity-30 disabled:pointer-events-none"
+                title="Move down"
+              >
+                <ArrowDown className="h-3.5 w-3.5" />
+              </button>
+            </div>
           )}
         </div>
       ),
@@ -309,7 +225,7 @@ export default function ArticlesTable() {
         loading={loading}
         emptyMessage="No articles found."
         onRowClick={(a) => {
-          if (!a.isRemoved) window.location.href = `/admin/articles/${a.id}/edit`;
+          window.location.href = `/admin/articles/${a.id}/edit`;
         }}
         renderMobileCard={(a, index) => {
           const dateStr = new Date(a.createdAt).toLocaleDateString('en-US', {
@@ -323,7 +239,7 @@ export default function ArticlesTable() {
             <div
               className="flex gap-4 py-4 border-b border-base-300 last:border-0 relative bg-base-100 rounded-none sm:rounded-xl sm:border sm:border-base-300 sm:p-4 sm:mb-4 sm:last:mb-0 cursor-pointer"
               onClick={() => {
-                if (!a.isRemoved) window.location.href = `/admin/articles/${a.id}/edit`;
+                window.location.href = `/admin/articles/${a.id}/edit`;
               }}
             >
               {/* Cover Image */}
@@ -359,44 +275,31 @@ export default function ArticlesTable() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    {a.isRemoved ? (
+                    <DropdownMenuItem asChild>
+                      <a href={`/admin/articles/${a.id}`}>
+                        <Eye /> View
+                      </a>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <a href={`/admin/articles/${a.id}/edit`}>
+                        <Pencil /> Edit
+                      </a>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem destructive onClick={() => setDeleteTarget(a)}>
+                      <Trash2 /> Delete
+                    </DropdownMenuItem>
+                    {canReorder && (
                       <>
-                        <DropdownMenuItem className="text-success" onClick={() => handleRestore(a)}>
-                          <RotateCcw /> Restore
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem disabled={index === 0} onClick={() => handleReorder(a, 'up')}>
+                          <ArrowUp /> Move Up
                         </DropdownMenuItem>
-                        <DropdownMenuItem destructive onClick={() => setDeleteTarget(a)}>
-                          <Trash2 /> Delete
+                        <DropdownMenuItem
+                          disabled={index === articles.length - 1}
+                          onClick={() => handleReorder(a, 'down')}
+                        >
+                          <ArrowDown /> Move Down
                         </DropdownMenuItem>
-                      </>
-                    ) : (
-                      <>
-                        <DropdownMenuItem asChild>
-                          <a href={`/admin/articles/${a.id}`}>
-                            <Eye /> View
-                          </a>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <a href={`/admin/articles/${a.id}/edit`}>
-                            <Pencil /> Edit
-                          </a>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem destructive onClick={() => setDeleteTarget(a)}>
-                          <Trash2 /> Remove
-                        </DropdownMenuItem>
-                        {canReorder && (
-                          <>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem disabled={index === 0} onClick={() => handleReorder(a, 'up')}>
-                              <ArrowUp /> Move Up
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              disabled={index === articles.length - 1}
-                              onClick={() => handleReorder(a, 'down')}
-                            >
-                              <ArrowDown /> Move Down
-                            </DropdownMenuItem>
-                          </>
-                        )}
                       </>
                     )}
                   </DropdownMenuContent>
@@ -416,12 +319,8 @@ export default function ArticlesTable() {
 
       <ConfirmModal
         open={!!deleteTarget}
-        message={
-          filter === 'removed'
-            ? `Are you sure you want to permanently delete "${deleteTarget?.title}"? This action cannot be undone.`
-            : `Are you sure you want to move "${deleteTarget?.title}" to the trash?`
-        }
-        confirmLabel={filter === 'removed' ? 'Permanently Delete' : 'Remove'}
+        message={`Are you sure you want to permanently delete "${deleteTarget?.title}"? This action cannot be undone.`}
+        confirmLabel="Delete"
         variant="danger"
         onConfirm={handleDelete}
         onCancel={() => setDeleteTarget(null)}

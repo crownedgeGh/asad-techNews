@@ -1,18 +1,24 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import ArticleCard from '../components/ArticleCard.astro';
+import { db } from '../db';
+import { articles } from '../db/schema';
+import { eq, asc, desc } from 'drizzle-orm';
+import { formatDate, formatViews, excerptFromContent } from '../lib/format';
 
-// Mock data for articles
-const allArticles = [
-  { title: "The Future of AI in Web Development", excerpt: "How AI is shaping the way we build websites.", imageUrl: "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&q=80&w=600&h=400", category: "AI", slug: "future-of-ai", date: "Aug 2, 2026", views: "3.4K" },
-  { title: "Next-Gen Processors Announced", excerpt: "A deep dive into the latest hardware architecture.", imageUrl: "https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?auto=format&fit=crop&q=80&w=600&h=400", category: "Hardware", slug: "next-gen-processors", date: "Aug 1, 2026", views: "5.1K" },
-  { title: "Astro 5 Released with Server Islands", excerpt: "The ultimate framework for content-driven websites gets even better.", imageUrl: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&q=80&w=600&h=400", category: "Web Dev", slug: "astro-5-released", date: "Jul 31, 2026", views: "8.2K" },
-  { title: "Cybersecurity Threats in 2026", excerpt: "What you need to know to stay safe online.", imageUrl: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&q=80&w=600&h=400", category: "Security", slug: "cyber-threats-2026", date: "Jul 30, 2026", views: "2.8K" },
-  { title: "New Design Tool Powered by AI", excerpt: "Generate entire UI components with a single prompt.", imageUrl: "https://images.unsplash.com/photo-1611162617474-5b21e879e113?auto=format&fit=crop&q=80&w=600&h=400", category: "Design", slug: "ai-design-tool", date: "Jul 29, 2026", views: "12.5K" },
-  { title: "Automated Video Editing", excerpt: "Edit podcasts and videos instantly with AI.", imageUrl: "https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?q=80&w=2340&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D", category: "Video", slug: "ai-video-editing", date: "Jul 28, 2026", views: "4.7K" },
-  { title: "MacBook Pro M5 Review", excerpt: "Is it worth the upgrade? We tested it out.", imageUrl: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&q=80&w=600&h=400", category: "Laptops", slug: "macbook-pro-m5-review", date: "Jul 27, 2026", views: "19.3K" },
-  { title: "Global Tech Summit 2026 Highlights", excerpt: "Key takeaways from this year's biggest tech event.", imageUrl: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=600&h=400", category: "Events", slug: "tech-summit-2026", date: "Jul 26, 2026", views: "6.9K" },
-];
+export const prerender = false;
+
+let allArticles: (typeof articles.$inferSelect)[] = [];
+try {
+  allArticles = await db
+    .select()
+    .from(articles)
+    .where(eq(articles.published, true))
+    .orderBy(asc(articles.sortOrder), desc(articles.createdAt))
+    .limit(30);
+} catch (e) {
+  console.error('Failed to load articles for homepage:', e);
+}
 ---
 
 <Layout title="Home">
@@ -26,14 +32,25 @@ const allArticles = [
         <section>
           <h2 class="text-3xl font-heading font-bold text-slate-900 dark:text-white mb-6 uppercase border-b border-slate-300 dark:border-slate-800 pb-3">LATEST <span class="text-primary font-light">NEWS</span></h2>
           <div class="flex flex-col">
+            {allArticles.length === 0 && (
+              <p class="text-slate-500 dark:text-slate-400 py-12 text-center">No articles published yet.</p>
+            )}
             {allArticles.map(article => (
-              <ArticleCard {...article} />
+              <ArticleCard
+                title={article.title}
+                excerpt={excerptFromContent(article.content)}
+                imageUrl={article.coverImage || '/logo.png'}
+                category={article.category}
+                slug={article.slug}
+                date={formatDate(article.createdAt)}
+                views={formatViews(article.views)}
+              />
             ))}
           </div>
         </section>
-        
+
       </div>
-      
+
       {/* Sidebar Area (Right 1 col) for Ads */}
       <aside class="lg:col-span-1">
         <div class="sticky top-24 space-y-8">

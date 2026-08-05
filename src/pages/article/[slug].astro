@@ -3,47 +3,72 @@ import Layout from '../../layouts/Layout.astro';
 import SocialShare from '../../components/SocialShare';
 import Comments from '../../components/Comments';
 import RelatedArticles from '../../components/RelatedArticles.astro';
+import { db } from '../../db';
+import { articles, users } from '../../db/schema';
+import { eq, sql } from 'drizzle-orm';
+import { formatDate, estimateReadTime } from '../../lib/format';
+import { injectLinkPreviews } from '../../lib/renderArticleContent';
 
-export const prerender = true;
-
-// In a real app, this would be fetched from DB via the slug
-export function getStaticPaths() {
-  return [
-    { params: { slug: 'future-of-ai' } },
-    { params: { slug: 'next-gen-processors' } },
-    { params: { slug: 'astro-5-released' } },
-  ];
-}
+export const prerender = false;
 
 const { slug } = Astro.params;
 
-// Mock article data
-const article = {
-  title: "The Future of AI in Web Development",
-  author: "Sarah Connor",
-  date: "August 2, 2026",
-  timeToRead: "5 min read",
-  category: "Artificial Intelligence",
-  coverImage: "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&q=80&w=1200&h=600",
-  content: `
-    <p>Artificial Intelligence is no longer just a buzzword; it's actively reshaping how we approach web development. From code generation to automated testing, the integration of AI tools is accelerating the development lifecycle and opening new possibilities.</p>
-    
-    <h2>The Rise of AI Assistants</h2>
-    <p>Developers are increasingly relying on AI assistants to write boilerplate code, debug complex issues, and even suggest architectural patterns. Tools like GitHub Copilot and Cursor have become indispensable in modern workflows.</p>
-    
-    <blockquote>
-      "The best developers in 2026 aren't those who write everything from scratch, but those who effectively orchestrate AI to solve problems."
-    </blockquote>
-    
-    <h2>Automated UI Generation</h2>
-    <p>We are seeing the emergence of tools that can generate entire user interfaces from simple text prompts or wireframe sketches. This allows designers and developers to iterate much faster.</p>
-    
-    <h3>What does this mean for developers?</h3>
-    <p>Rather than replacing developers, AI is elevating them. The focus is shifting from syntax to logic and architecture. Understanding business requirements and translating them into robust systems remains uniquely human.</p>
-  `
-};
+const rows = await db
+  .select({
+    id: articles.id,
+    title: articles.title,
+    slug: articles.slug,
+    content: articles.content,
+    coverImage: articles.coverImage,
+    category: articles.category,
+    published: articles.published,
+    views: articles.views,
+    likes: articles.likes,
+    commentsCount: articles.commentsCount,
+    createdAt: articles.createdAt,
+    authorName: users.name,
+  })
+  .from(articles)
+  .leftJoin(users, eq(articles.authorId, users.id))
+  .where(eq(articles.slug, slug!));
+
+const article = rows[0];
+
+if (!article || !article.published) {
+  return new Response(null, { status: 404 });
+}
+
+// Best-effort view counter; failures shouldn't block rendering the page.
+db.update(articles)
+  .set({ views: sql`${articles.views} + 1` })
+  .where(eq(articles.id, article.id))
+  .catch((e) => console.error('Failed to increment views:', e));
 
 const currentUrl = Astro.url.href;
+const authorName = article.authorName ?? 'Staff Writer';
+const dateStr = formatDate(article.createdAt);
+const timeToRead = estimateReadTime(article.content);
+const coverImage = article.coverImage || '/logo.png';
+
+let renderedContent = article.content;
+try {
+  renderedContent = await injectLinkPreviews(article.content);
+} catch (e) {
+  console.error('Failed to inject link previews:', e);
+}
+
+let featured: { id: number; title: string; slug: string; createdAt: Date }[] = [];
+try {
+  featured = await db
+    .select({ id: articles.id, title: articles.title, slug: articles.slug, createdAt: articles.createdAt })
+    .from(articles)
+    .where(eq(articles.published, true))
+    .orderBy(sql`${articles.views} desc`)
+    .limit(3);
+  featured = featured.filter((a) => a.id !== article.id).slice(0, 2);
+} catch (e) {
+  console.error('Failed to load featured articles:', e);
+}
 ---
 
 <Layout title={article.title}>
@@ -57,20 +82,20 @@ const currentUrl = Astro.url.href;
           <div class="flex items-center gap-2 mb-4">
             <span class="text-sm font-bold uppercase tracking-wider text-primary dark:text-primary">{article.category}</span>
             <span class="text-sm text-slate-500 dark:text-slate-400">&bull;</span>
-            <time class="text-sm text-slate-500 dark:text-slate-400">{article.date}</time>
+            <time class="text-sm text-slate-500 dark:text-slate-400">{dateStr}</time>
             <span class="text-sm text-slate-500 dark:text-slate-400">&bull;</span>
-            <span class="text-sm text-slate-500 dark:text-slate-400">{article.timeToRead}</span>
+            <span class="text-sm text-slate-500 dark:text-slate-400">{timeToRead}</span>
           </div>
           <h1 class="text-4xl md:text-5xl font-heading font-extrabold text-slate-900 dark:text-white leading-tight mb-6">
             {article.title}
           </h1>
           <div class="flex items-center gap-4">
             <div class="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xl font-bold text-slate-500 dark:text-slate-400">
-              {article.author.charAt(0)}
+              {authorName.charAt(0)}
             </div>
             <div>
-              <p class="font-medium text-slate-900 dark:text-white">{article.author}</p>
-              <p class="text-sm text-slate-500 dark:text-slate-400">Tech Editor</p>
+              <p class="font-medium text-slate-900 dark:text-white">{authorName}</p>
+              <p class="text-sm text-slate-500 dark:text-slate-400">{article.category}</p>
             </div>
           </div>
         </header>
@@ -79,13 +104,13 @@ const currentUrl = Astro.url.href;
         <SocialShare client:load url={currentUrl} title={article.title} />
 
         {/* Cover Image */}
-        <div class="mb-10 rounded-2xl overflow-hidden shadow-lg">
-          <img src={article.coverImage} alt={article.title} class="w-full h-auto object-cover" />
+        <div class="mb-10 rounded-2xl overflow-hidden shadow-lg aspect-video">
+          <img src={coverImage} alt={article.title} class="w-full h-full object-cover" />
         </div>
 
         {/* Article Body */}
         <div class="prose prose-lg dark:prose-invert prose-headings:font-heading prose-a:text-primary dark:prose-a:text-primary hover:prose-a:text-secondary max-w-none font-body">
-          <div set:html={article.content} />
+          <div set:html={renderedContent} />
         </div>
 
         {/* Inline Ad Slot (Simulated) */}
@@ -97,21 +122,21 @@ const currentUrl = Astro.url.href;
         </div>
 
         {/* Comments */}
-        <Comments client:load />
+        <Comments client:load articleId={article.id} />
 
         {/* Author Bio Box */}
         <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-8 my-8 flex flex-col sm:flex-row gap-6 items-center sm:items-start border border-slate-200 dark:border-slate-700/50">
            <div class="w-24 h-24 rounded-full bg-slate-200 dark:bg-slate-700 shrink-0 flex items-center justify-center text-3xl font-extrabold text-slate-400 dark:text-slate-500">
-             {article.author.charAt(0)}
+             {authorName.charAt(0)}
            </div>
            <div>
-             <h4 class="text-xl font-bold text-slate-900 dark:text-white mb-2">About {article.author}</h4>
-             <p class="text-slate-600 dark:text-slate-300">Sarah is a senior technology editor with over 10 years of experience covering AI, web development, and consumer electronics.</p>
+             <h4 class="text-xl font-bold text-slate-900 dark:text-white mb-2">About {authorName}</h4>
+             <p class="text-slate-600 dark:text-slate-300">Contributor at The Lumen Tech, covering {article.category.toLowerCase()}.</p>
            </div>
         </div>
 
         {/* Related Articles */}
-        <RelatedArticles />
+        <RelatedArticles category={article.category} excludeSlug={article.slug} />
 
       </article>
 
@@ -130,20 +155,20 @@ const currentUrl = Astro.url.href;
           {/* Featured News Widget */}
           <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-6">
             <h3 class="font-heading font-bold text-xl text-slate-900 dark:text-white mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">Featured News</h3>
-            <ul class="space-y-4">
-              <li>
-                <a href="#" class="group block">
-                  <h4 class="font-bold text-slate-800 dark:text-slate-200 group-hover:text-primary transition-colors">Astro 5 Released with Server Islands</h4>
-                  <p class="text-sm text-slate-500 mt-1">Jul 31, 2026</p>
-                </a>
-              </li>
-              <li>
-                <a href="#" class="group block">
-                  <h4 class="font-bold text-slate-800 dark:text-slate-200 group-hover:text-primary transition-colors">MacBook Pro M5 Review</h4>
-                  <p class="text-sm text-slate-500 mt-1">Jul 27, 2026</p>
-                </a>
-              </li>
-            </ul>
+            {featured.length === 0 ? (
+              <p class="text-sm text-slate-500 dark:text-slate-400">No other articles yet.</p>
+            ) : (
+              <ul class="space-y-4">
+                {featured.map((f) => (
+                  <li>
+                    <a href={`/article/${f.slug}`} class="group block">
+                      <h4 class="font-bold text-slate-800 dark:text-slate-200 group-hover:text-primary transition-colors">{f.title}</h4>
+                      <p class="text-sm text-slate-500 mt-1">{formatDate(f.createdAt)}</p>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
           
         </div>

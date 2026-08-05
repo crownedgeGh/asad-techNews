@@ -4,6 +4,7 @@ import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
 import Underline from '@tiptap/extension-underline';
+import { toast } from 'sonner';
 import {
   Bold,
   Italic,
@@ -16,6 +17,7 @@ import {
   Quote,
   Link as LinkIcon,
   Image as ImageIcon,
+  Loader2,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -37,6 +39,9 @@ export default function TipTapEditor({
   onChange,
   placeholder = 'Start writing your article...',
 }: TipTapEditorProps) {
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [uploadingImage, setUploadingImage] = React.useState(false);
+
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
@@ -73,9 +78,26 @@ export default function TipTapEditor({
     );
   }
 
-  const addImage = () => {
-    const url = window.prompt('Enter image URL:');
-    if (url) editor.chain().focus().setImage({ src: url }).run();
+  const triggerImageUpload = () => fileInputRef.current?.click();
+
+  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      if (!res.ok) throw new Error('Upload failed');
+      const { url } = await res.json();
+      editor.chain().focus().setImage({ src: url }).run();
+      toast.success('Image converted to WebP and inserted');
+    } catch {
+      toast.error('Failed to upload image');
+    } finally {
+      setUploadingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   const setLink = () => {
@@ -145,13 +167,21 @@ export default function TipTapEditor({
         </button>
         <button
           type="button"
-          title="Image"
-          aria-label="Image"
-          onMouseDown={(e) => { e.preventDefault(); addImage(); }}
-          className="inline-flex items-center justify-center h-7 w-7 rounded-md text-base-content hover:bg-base-200 transition-colors"
+          title={uploadingImage ? 'Converting to WebP…' : 'Insert image (auto-converted to WebP)'}
+          aria-label="Insert image"
+          disabled={uploadingImage}
+          onMouseDown={(e) => { e.preventDefault(); triggerImageUpload(); }}
+          className="inline-flex items-center justify-center h-7 w-7 rounded-md text-base-content hover:bg-base-200 transition-colors disabled:opacity-50"
         >
-          <ImageIcon className="h-3.5 w-3.5" />
+          {uploadingImage ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImageIcon className="h-3.5 w-3.5" />}
         </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleImageFileChange}
+        />
       </div>
 
       {/* Editor area */}

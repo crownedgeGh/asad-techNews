@@ -7,11 +7,7 @@ import { Label } from './ui/label';
 import { Button } from './ui/button';
 import { Switch } from './ui/switch';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from './ui/select';
-
-const CATEGORIES = [
-  'AI', 'Hardware', 'Web Dev', 'Security', 'Design',
-  'Video', 'Laptops', 'Events', 'Mobile', 'Cloud', 'Other',
-];
+import { CATEGORIES } from '../../lib/categories';
 
 export interface ArticleData {
   id?: number;
@@ -49,24 +45,28 @@ export default function ArticleForm(props: ArticleFormProps) {
   const [published, setPublished] = useState(initialData?.published ?? false);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [loadingArticle, setLoadingArticle] = useState(mode === 'edit' && !initialData);
 
   React.useEffect(() => {
-    if (mode === 'edit' && props.articleId) {
-      const stored = localStorage.getItem('admin_articles');
-      if (stored) {
-        const allArticles = JSON.parse(stored);
-        const article = allArticles.find((a: any) => a.id === props.articleId);
-        if (article) {
+    if (mode === 'edit' && props.articleId && !initialData) {
+      fetch(`/api/admin/articles/${props.articleId}`)
+        .then((res) => {
+          if (!res.ok) throw new Error('Failed to load article');
+          return res.json();
+        })
+        .then((article) => {
           setTitle(article.title);
           setSlug(article.slug);
+          setSlugManual(true);
           setContent(article.content);
           setCategory(article.category);
           setCoverImage(article.coverImage ?? '');
           setPublished(article.published);
-        }
-      }
+        })
+        .catch(() => toast.error('Failed to load article'))
+        .finally(() => setLoadingArticle(false));
     }
-  }, [mode, props.articleId]);
+  }, [mode, props.articleId, initialData]);
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -92,7 +92,7 @@ export default function ArticleForm(props: ArticleFormProps) {
       if (!res.ok) throw new Error('Upload failed');
       const { url } = await res.json();
       setCoverImage(url);
-      toast.success('Cover image uploaded');
+      toast.success('Cover image converted to WebP and uploaded');
     } catch {
       toast.error('Failed to upload image');
     } finally {
@@ -109,32 +109,20 @@ export default function ArticleForm(props: ArticleFormProps) {
 
     setSubmitting(true);
     try {
-      const stored = localStorage.getItem('admin_articles');
-      let allArticles = stored ? JSON.parse(stored) : [];
+      const id = initialData?.id ?? props.articleId;
+      const url = mode === 'edit' ? `/api/admin/articles/${id}` : '/api/admin/articles';
+      const method = mode === 'edit' ? 'PUT' : 'POST';
 
-      if (mode === 'edit') {
-        const id = initialData?.id || props.articleId;
-        const index = allArticles.findIndex((a: any) => a.id === id);
-        if (index !== -1) {
-          allArticles[index] = {
-            ...allArticles[index],
-            title, slug, content, category, coverImage, published,
-            updatedAt: new Date().toISOString()
-          };
-        }
-      } else {
-        const newArticle = {
-          id: Date.now(),
-          title, slug, content, category, coverImage, published,
-          views: 0, likes: 0, commentsCount: 0,
-          sortOrder: allArticles.length > 0 ? Math.max(...allArticles.map((a: any) => a.sortOrder ?? 0)) + 1 : 1,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-        allArticles.unshift(newArticle);
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, slug, content, category, coverImage, published }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? 'Something went wrong');
       }
-
-      localStorage.setItem('admin_articles', JSON.stringify(allArticles));
 
       toast.success(mode === 'edit' ? 'Article updated successfully!' : 'Article created successfully!');
 
@@ -147,6 +135,14 @@ export default function ArticleForm(props: ArticleFormProps) {
       setSubmitting(false);
     }
   };
+
+  if (loadingArticle) {
+    return (
+      <div className="flex items-center justify-center py-24 text-base-content/60">
+        <Loader2 className="animate-spin mr-2" /> Loading article…
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -216,7 +212,7 @@ export default function ArticleForm(props: ArticleFormProps) {
           <Button variant="outline" size="sm" asChild className="cursor-pointer" disabled={uploading}>
             <label>
               {uploading ? <Loader2 className="animate-spin" /> : <Upload />}
-              {uploading ? 'Uploading…' : 'Upload Image'}
+              {uploading ? 'Converting to WebP…' : 'Upload Image'}
               <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploading} />
             </label>
           </Button>

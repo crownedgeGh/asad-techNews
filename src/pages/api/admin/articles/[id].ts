@@ -59,8 +59,14 @@ export const PUT: APIRoute = async ({ params, request }) => {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
-  } catch (err) {
+  } catch (err: any) {
     console.error('PUT /api/admin/articles/[id] error:', err);
+    if (err?.cause?.code === '23505' || err?.code === '23505') {
+      return new Response(JSON.stringify({ error: 'Slug already exists' }), {
+        status: 409,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
     return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
