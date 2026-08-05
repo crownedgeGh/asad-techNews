@@ -11,6 +11,7 @@ import { Categories } from './collections/Categories'
 import { Comments } from './collections/Comments'
 import { Media } from './collections/Media'
 import { Users } from './collections/Users'
+import { paragraphsToDocument } from './lib/prosemirror-doc'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -34,6 +35,11 @@ export default buildConfig({
             prefillOnly: false,
           }
         : false,
+  },
+  // The custom editorial admin owns /admin; Payload's native admin lives at /cms.
+  // This must stay in lockstep with the directory name under src/app/(payload)/.
+  routes: {
+    admin: '/cms',
   },
   collections: [Users, Media, Categories, Articles, Comments],
   editor: lexicalEditor(),
@@ -112,35 +118,9 @@ export default buildConfig({
           data: {
             ...data,
             _status: 'published',
-            content: {
-              root: {
-                type: 'root',
-                direction: 'ltr',
-                format: '',
-                indent: 0,
-                version: 1,
-                children: [
-                  {
-                    type: 'paragraph',
-                    format: '',
-                    indent: 0,
-                    version: 1,
-                    direction: 'ltr',
-                    children: [
-                      {
-                        type: 'text',
-                        detail: 0,
-                        format: 0,
-                        mode: 'normal',
-                        style: '',
-                        text: data.excerpt,
-                        version: 1,
-                      },
-                    ],
-                  },
-                ],
-              },
-            },
+            // ProseMirror JSON — the format the custom admin's TipTap editor
+            // reads and writes. See design decision 3.
+            content: paragraphsToDocument([data.excerpt]),
           },
         })
       }

@@ -216,21 +216,15 @@ export interface Article {
   slug: string;
   excerpt?: string | null;
   coverImage?: (number | null) | Media;
-  content: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
+  content:
+    | {
         [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  };
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   category?: (number | null) | Category;
   author?: (number | null) | User;
   publishedAt?: string | null;

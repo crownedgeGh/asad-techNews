@@ -1,8 +1,8 @@
 import { notFound } from 'next/navigation'
-import { RichText } from '@payloadcms/richtext-lexical/react'
 import { getPayload } from 'payload'
 
 import config from '@payload-config'
+import { ArticleBody } from '@/components/ArticleBody'
 
 type Args = {
   params: Promise<{ slug: string }>
@@ -14,7 +14,13 @@ export default async function ArticlePage({ params }: Args) {
 
   const { docs } = await payload.find({
     collection: 'articles',
-    where: { slug: { equals: slug } },
+    where: {
+      slug: { equals: slug },
+      // The Local API defaults to overrideAccess: true, so the collection's
+      // read rule does not filter this query. Without an explicit status
+      // filter, an unpublished draft would render on the public site.
+      _status: { equals: 'published' },
+    },
     limit: 1,
     depth: 1,
   })
@@ -40,7 +46,7 @@ export default async function ArticlePage({ params }: Args) {
         </p>
       ) : null}
       <div className="prose dark:prose-invert prose-neutral max-w-none font-serif">
-        <RichText data={article.content} />
+        <ArticleBody content={article.content} />
       </div>
     </main>
   )

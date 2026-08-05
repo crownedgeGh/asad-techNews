@@ -1,39 +1,71 @@
 ## ADDED Requirements
 
-### Requirement: Admin API supports full article CRUD
-The admin API SHALL expose RESTful endpoints for creating, reading, updating, and deleting articles.
+### Requirement: Admin mutations go through a server-side action layer
+All admin write operations SHALL be implemented as server-side actions that run in the application's Node process, rather than as a bespoke admin REST API or as client-side writes.
 
-#### Scenario: List articles
-- **WHEN** a `GET` request is made to `/api/admin/articles` with optional `?page=N` query param
-- **THEN** the API SHALL return a JSON response with `{ articles: Article[], total: number, page: number, pageSize: 15 }` ordered by `sort_order` ascending
+#### Scenario: The mutation surface covers the article lifecycle
+- **WHEN** the admin needs to change article data
+- **THEN** actions SHALL exist for creating an article, updating an article, deleting an article, changing publication status, and reordering an article
 
-#### Scenario: Create article
-- **WHEN** a `POST` request is made to `/api/admin/articles` with a valid article body (title, slug, content, category, coverImage?, published)
-- **THEN** the API SHALL insert the article into the database, assign `sort_order` to the next available value, and return `{ success: true, article: Article }` with HTTP 201
+#### Scenario: No bespoke admin REST surface is introduced
+- **WHEN** the admin performs any read or write
+- **THEN** it SHALL use the server-side action layer or the CMS's own API, and SHALL NOT introduce a parallel `/api/admin/*` REST surface
 
-#### Scenario: Get single article
-- **WHEN** a `GET` request is made to `/api/admin/articles/[id]`
-- **THEN** the API SHALL return the article's full data as JSON or HTTP 404 if not found
+### Requirement: Mutations enforce access control rather than bypassing it
+Every action SHALL execute against the CMS with the calling user's identity and with access control enforced, so authorization is decided by the collection's rules rather than by what the UI chooses to render.
 
-#### Scenario: Update article
-- **WHEN** a `PUT` request is made to `/api/admin/articles/[id]` with updated fields
-- **THEN** the API SHALL update the article in the database and return `{ success: true, article: Article }`
+#### Scenario: Actions run as the calling user with access checks enabled
+- **WHEN** any admin action performs a write
+- **THEN** it SHALL pass the authenticated user to the CMS and SHALL NOT disable access-control evaluation
 
-#### Scenario: Delete article
-- **WHEN** a `DELETE` request is made to `/api/admin/articles/[id]`
-- **THEN** the API SHALL delete the article from the database and return `{ success: true }` or HTTP 404 if not found
+#### Scenario: An action a user is not permitted to perform is refused
+- **WHEN** a user whose role does not permit an operation invokes the corresponding action
+- **THEN** the write SHALL be refused by the CMS's access control, independently of whether the UI exposed the control
 
-### Requirement: Admin API supports article reordering
-The admin API SHALL expose an endpoint to move an article up or down in sort order.
+#### Scenario: An unauthenticated caller is rejected
+- **WHEN** an admin action is invoked without a valid session
+- **THEN** it SHALL be rejected before performing any read or write
 
-#### Scenario: Reorder article up
-- **WHEN** a `POST` request is made to `/api/admin/articles/[id]/reorder` with body `{ direction: "up" }`
-- **THEN** the API SHALL swap the `sort_order` of the target article with the article immediately above it and return `{ success: true }`
+### Requirement: Reordering swaps adjacent positions atomically
+The reorder action SHALL move an article one position at a time by exchanging trend positions with its neighbour, and SHALL leave ordering consistent even if the operation fails partway.
 
-#### Scenario: Reorder article down
-- **WHEN** a `POST` request is made to `/api/admin/articles/[id]/reorder` with body `{ direction: "down" }`
-- **THEN** the API SHALL swap the `sort_order` of the target article with the article immediately below it and return `{ success: true }`
+#### Scenario: Adjacent articles exchange positions
+- **WHEN** the reorder action is invoked for an article with a direction
+- **THEN** that article and its adjacent neighbour in that direction SHALL exchange trend positions, and no other article's position SHALL change
 
-#### Scenario: Reorder at boundary has no effect
-- **WHEN** a reorder "up" is requested on the first article or "down" on the last
-- **THEN** the API SHALL return `{ success: true, message: "Already at boundary" }` without changing any sort orders
+#### Scenario: The swap is all-or-nothing
+- **WHEN** a failure occurs after the first of the two position updates
+- **THEN** neither update SHALL persist, so no two articles are left sharing the same trend position
+
+#### Scenario: Boundaries succeed as a no-op
+- **WHEN** the reorder action is invoked to move the first article up or the last article down
+- **THEN** it SHALL return success without modifying any article, rather than returning an error
+
+### Requirement: Actions return structured results instead of throwing
+Actions SHALL report outcomes in a form the UI can render directly.
+
+#### Scenario: Success returns the resulting data
+- **WHEN** an action succeeds
+- **THEN** it SHALL return a success result carrying whatever data the caller needs, such as the created article's identifier
+
+#### Scenario: Failure returns an error the UI can display
+- **WHEN** an action fails validation or is refused
+- **THEN** it SHALL return a failure result with a message suitable for display and, where applicable, field-level errors — rather than propagating an unhandled exception
+
+#### Scenario: Internal details are not leaked
+- **WHEN** an action fails due to an internal error
+- **THEN** the returned message SHALL NOT expose database internals, stack traces, or connection details
+
+### Requirement: Mutations invalidate affected cached views
+After a successful write, the action SHALL invalidate the cached server-rendered views affected by it.
+
+#### Scenario: Article changes refresh the list and dashboard
+- **WHEN** an article is created, updated, deleted, reordered, or has its status changed
+- **THEN** the articles list and dashboard SHALL reflect the change on next render without requiring a manual refresh or a full application restart
+
+### Requirement: Admin reads use the CMS's in-process API
+Admin pages SHALL read data in-process rather than issuing HTTP requests to the application's own API.
+
+#### Scenario: Server components read directly
+- **WHEN** an admin page renders on the server
+- **THEN** it SHALL obtain its data through the CMS's local in-process API rather than a network round-trip to its own REST endpoints
