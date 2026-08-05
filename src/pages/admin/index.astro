@@ -54,7 +54,7 @@ const statCards = [
     key: 'totalViews',
     value: (stats?.totalViews ?? 0).toLocaleString(),
     desc: 'Across all articles',
-    color: 'text-secondary-foreground',
+    color: 'text-base-content',
     icon: 'M15 12a3 3 0 11-6 0 3 3 0 016 0zM2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z',
   },
   {
@@ -62,7 +62,7 @@ const statCards = [
     key: 'totalLikes',
     value: (stats?.totalLikes ?? 0).toLocaleString(),
     desc: 'Reader engagement',
-    color: 'text-accent-foreground',
+    color: 'text-accent-content',
     icon: 'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z',
   },
   {
@@ -80,13 +80,13 @@ const statCards = [
   <div class="space-y-8">
     <!-- Page header -->
     <div>
-      <h1 class="text-2xl font-bold text-foreground">Dashboard</h1>
-      <p class="text-muted-foreground text-sm mt-1">Overview of The Lumen Tech</p>
+      <h1 class="text-2xl font-bold text-base-content">Dashboard</h1>
+      <p class="text-base-content/60 text-sm mt-1">Overview of The Lumen Tech</p>
     </div>
 
     <!-- DB unavailable warning -->
     {dbError && (
-      <div class="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-foreground" data-db-warning>
+      <div class="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-base-content" data-db-warning>
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0 text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
         </svg>
@@ -97,40 +97,40 @@ const statCards = [
     <!-- Stats grid -->
     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4" data-stats-grid>
       {statCards.map((card) => (
-        <div class="rounded-xl border border-border bg-card shadow-sm p-5 flex flex-col gap-2">
+        <div class="rounded-xl border border-base-300 bg-base-100 shadow-sm p-5 flex flex-col gap-2">
           <div class={`h-8 w-8 ${card.color}`}>
             <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={card.icon} />
             </svg>
           </div>
-          <div class="text-sm text-muted-foreground">{card.label}</div>
+          <div class="text-sm text-base-content/60">{card.label}</div>
           <div class={`text-3xl font-bold ${card.color} stat-value`} data-stat-key={card.key}>{card.value}</div>
-          <div class="text-xs text-muted-foreground">{card.desc}</div>
+          <div class="text-xs text-base-content/60">{card.desc}</div>
         </div>
       ))}
     </div>
 
     <!-- Recent Activity -->
-    <div class="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
-      <div class="flex items-center justify-between px-6 py-4 border-b border-border">
-        <h2 class="font-semibold text-foreground">Recent Activity</h2>
+    <div class="bg-base-100 rounded-xl border border-base-300 shadow-sm overflow-hidden">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-base-300">
+        <h2 class="font-semibold text-base-content">Recent Activity</h2>
         <a href="/admin/articles" class="text-sm font-medium text-primary hover:underline">View all →</a>
       </div>
-      <div class="divide-y divide-border" data-recent-list>
+      <div class="divide-y divide-base-300" data-recent-list>
         {recentArticles.length === 0 ? (
-          <p class="text-center py-12 text-muted-foreground">No articles yet. <a href="/admin/articles/new" class="text-primary hover:underline">Create the first one!</a></p>
+          <p class="text-center py-12 text-base-content/60">No articles yet. <a href="/admin/articles/new" class="text-primary hover:underline">Create the first one!</a></p>
         ) : (
           recentArticles.map((article) => (
-            <div class="flex items-center justify-between px-6 py-4 hover:bg-secondary/40 transition-colors">
+            <div class="flex items-center justify-between px-6 py-4 hover:bg-base-200/40 transition-colors">
               <div class="min-w-0">
-                <p class="font-medium text-sm text-foreground truncate">{article.title}</p>
-                <p class="text-xs text-muted-foreground mt-0.5">{article.category} · {formatDate(article.createdAt)}</p>
+                <p class="font-medium text-sm text-base-content truncate">{article.title}</p>
+                <p class="text-xs text-base-content/60 mt-0.5">{article.category} · {formatDate(article.createdAt)}</p>
               </div>
               <div class="flex items-center gap-3 flex-shrink-0">
                 <span class={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${article.published ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}>
                   {article.published ? 'Published' : 'Draft'}
                 </span>
-                <a href={`/admin/articles/${article.id}/edit`} class="text-sm font-medium text-muted-foreground hover:text-foreground">Edit</a>
+                <a href={`/admin/articles/${article.id}/edit`} class="text-sm font-medium text-base-content/60 hover:text-base-content">Edit</a>
               </div>
             </div>
           ))
@@ -140,13 +140,13 @@ const statCards = [
 
     <!-- Quick actions -->
     <div class="flex gap-3 flex-wrap">
-      <a href="/admin/articles/new" class="inline-flex items-center gap-2 rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium shadow-sm hover:bg-primary/90 transition-colors">
+      <a href="/admin/articles/new" class="inline-flex items-center gap-2 rounded-md bg-primary text-primary-content px-4 py-2 text-sm font-medium shadow-sm hover:bg-primary/90 transition-colors">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
         Post Article
       </a>
-      <a href="/admin/articles" class="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium shadow-sm hover:bg-secondary transition-colors">
+      <a href="/admin/articles" class="inline-flex items-center gap-2 rounded-md border border-base-300 bg-base-100 px-4 py-2 text-sm font-medium shadow-sm hover:bg-base-200 transition-colors">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
         </svg>
@@ -196,16 +196,16 @@ const statCards = [
           sorted.forEach(article => {
             const dateStr = new Date(article.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
             html += `
-              <div class="flex items-center justify-between px-6 py-4 hover:bg-secondary/40 transition-colors">
+              <div class="flex items-center justify-between px-6 py-4 hover:bg-base-200/40 transition-colors">
                 <div class="min-w-0">
-                  <p class="font-medium text-sm text-foreground truncate">${article.title}</p>
-                  <p class="text-xs text-muted-foreground mt-0.5">${article.category} · ${dateStr}</p>
+                  <p class="font-medium text-sm text-base-content truncate">${article.title}</p>
+                  <p class="text-xs text-base-content/60 mt-0.5">${article.category} · ${dateStr}</p>
                 </div>
                 <div class="flex items-center gap-3 flex-shrink-0">
                   <span class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${article.published ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}">
                     ${article.published ? 'Published' : 'Draft'}
                   </span>
-                  <a href="/admin/articles/${article.id}/edit" class="text-sm font-medium text-muted-foreground hover:text-foreground">Edit</a>
+                  <a href="/admin/articles/${article.id}/edit" class="text-sm font-medium text-base-content/60 hover:text-base-content">Edit</a>
                 </div>
               </div>
             `;

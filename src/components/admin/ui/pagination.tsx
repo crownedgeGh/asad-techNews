@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '../../../lib/utils';
-import { Button } from './button';
 
 interface PaginationProps {
   page: number;
@@ -27,45 +26,38 @@ export function Pagination({ page, totalPages, onPageChange }: PaginationProps) 
   const pages = getPageList(page, totalPages);
 
   return (
-    <nav className="flex items-center justify-center gap-1" aria-label="Pagination">
-      <Button
-        variant="outline"
-        size="icon-sm"
+    <nav className="join" aria-label="Pagination">
+      <button
+        className="join-item btn btn-outline btn-sm"
         onClick={() => onPageChange(page - 1)}
         disabled={page === 1}
         aria-label="Previous page"
       >
-        <ChevronLeft />
-      </Button>
+        <ChevronLeft className="size-3.5" />
+      </button>
       {pages.map((p, i) =>
         p === 'ellipsis' ? (
-          <span key={`e-${i}`} className="px-2 text-sm text-muted-foreground">
+          <button key={`e-${i}`} className="join-item btn btn-outline btn-sm btn-disabled">
             …
-          </span>
+          </button>
         ) : (
           <button
             key={p}
             onClick={() => onPageChange(p)}
-            className={cn(
-              'h-7 w-7 rounded-md text-sm font-medium transition-colors',
-              p === page
-                ? 'bg-primary text-primary-foreground'
-                : 'text-foreground hover:bg-secondary'
-            )}
+            className={cn('join-item btn btn-sm', p === page ? 'btn-primary' : 'btn-outline')}
           >
             {p}
           </button>
         )
       )}
-      <Button
-        variant="outline"
-        size="icon-sm"
+      <button
+        className="join-item btn btn-outline btn-sm"
         onClick={() => onPageChange(page + 1)}
         disabled={page === totalPages}
         aria-label="Next page"
       >
-        <ChevronRight />
-      </Button>
+        <ChevronRight className="size-3.5" />
+      </button>
     </nav>
   );
 }

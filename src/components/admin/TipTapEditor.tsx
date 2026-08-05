@@ -38,6 +38,7 @@ export default function TipTapEditor({
   placeholder = 'Start writing your article...',
 }: TipTapEditorProps) {
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
       StarterKit,
       Image,
@@ -56,7 +57,21 @@ export default function TipTapEditor({
     },
   });
 
-  if (!editor) return null;
+  const loadedContentRef = React.useRef(initialContent);
+  React.useEffect(() => {
+    if (!editor || initialContent === loadedContentRef.current) return;
+    loadedContentRef.current = initialContent;
+    editor.commands.setContent(initialContent || `<p>${placeholder}</p>`);
+  }, [editor, initialContent, placeholder]);
+
+  if (!editor) {
+    return (
+      <div className="border border-base-300 rounded-xl overflow-hidden bg-base-100">
+        <div className="flex items-center gap-1 p-2 bg-base-200/60 border-b border-base-300 h-[42px]" />
+        <div className="min-h-[360px] p-4 animate-pulse text-base-content/40 text-sm">Loading editor…</div>
+      </div>
+    );
+  }
 
   const addImage = () => {
     const url = window.prompt('Enter image URL:');
@@ -92,12 +107,12 @@ export default function TipTapEditor({
   ];
 
   return (
-    <div className="border border-border rounded-xl overflow-hidden bg-card">
+    <div className="border border-base-300 rounded-xl overflow-hidden bg-base-100">
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-1 p-2 bg-secondary/60 border-b border-border">
+      <div className="flex flex-wrap items-center gap-1 p-2 bg-base-200/60 border-b border-base-300">
         {toolbarGroups.map((group, gi) => (
           <React.Fragment key={gi}>
-            {gi > 0 && <span className="w-px h-5 bg-border mx-1" />}
+            {gi > 0 && <span className="w-px h-5 bg-base-300 mx-1" />}
             {group.map(({ label, icon: Icon, action, isActive }) => (
               <button
                 key={label}
@@ -110,7 +125,7 @@ export default function TipTapEditor({
                 }}
                 className={cn(
                   'inline-flex items-center justify-center h-7 w-7 rounded-md transition-colors',
-                  isActive?.(editor) ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-secondary'
+                  isActive?.(editor) ? 'bg-primary text-primary-content' : 'text-base-content hover:bg-base-200'
                 )}
               >
                 <Icon className="h-3.5 w-3.5" />
@@ -118,13 +133,13 @@ export default function TipTapEditor({
             ))}
           </React.Fragment>
         ))}
-        <span className="w-px h-5 bg-border mx-1" />
+        <span className="w-px h-5 bg-base-300 mx-1" />
         <button
           type="button"
           title="Link"
           aria-label="Link"
           onMouseDown={(e) => { e.preventDefault(); setLink(); }}
-          className="inline-flex items-center justify-center h-7 w-7 rounded-md text-foreground hover:bg-secondary transition-colors"
+          className="inline-flex items-center justify-center h-7 w-7 rounded-md text-base-content hover:bg-base-200 transition-colors"
         >
           <LinkIcon className="h-3.5 w-3.5" />
         </button>
@@ -133,7 +148,7 @@ export default function TipTapEditor({
           title="Image"
           aria-label="Image"
           onMouseDown={(e) => { e.preventDefault(); addImage(); }}
-          className="inline-flex items-center justify-center h-7 w-7 rounded-md text-foreground hover:bg-secondary transition-colors"
+          className="inline-flex items-center justify-center h-7 w-7 rounded-md text-base-content hover:bg-base-200 transition-colors"
         >
           <ImageIcon className="h-3.5 w-3.5" />
         </button>

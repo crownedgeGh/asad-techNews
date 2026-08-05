@@ -23,7 +23,7 @@ export default function MobileNav({ pathname }: { pathname: string }) {
       </SheetTrigger>
       <SheetContent side="left">
         <SheetTitle className="sr-only">Admin navigation</SheetTitle>
-        <div className="px-4 py-5 border-b border-sidebar-border mb-2 flex items-center gap-2">
+        <div className="px-4 py-5 border-b border-base-300 mb-2 flex items-center gap-2">
           <Zap className="h-5 w-5 text-primary" />
           <span className="text-lg font-extrabold tracking-tight">Lumen Admin</span>
         </div>
@@ -36,8 +36,8 @@ export default function MobileNav({ pathname }: { pathname: string }) {
               className={cn(
                 'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
                 isActive(href, exact)
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-sidebar-foreground hover:bg-sidebar-accent'
+                  ? 'bg-primary text-primary-content'
+                  : 'text-base-content hover:bg-base-200'
               )}
             >
               <Icon className="h-5 w-5" />

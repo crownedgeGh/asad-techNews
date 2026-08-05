@@ -1,5 +1,6 @@
 ---
 import AdminLayout from '../../../../layouts/AdminLayout.astro';
+import BackButton from '../../../../components/admin/BackButton.astro';
 import { db } from '../../../../db';
 import { articles } from '../../../../db/schema';
 import { eq } from 'drizzle-orm';
@@ -30,31 +31,34 @@ function formatDate(date: Date) {
   <div class="space-y-4">
     <!-- Breadcrumb + Actions -->
     <div class="flex items-center justify-between flex-wrap gap-3">
-      <nav class="flex items-center gap-2 text-sm text-muted-foreground">
-        <a href="/admin" class="hover:text-primary">Admin</a>
-        <span>/</span>
-        <a href="/admin/articles" class="hover:text-primary">Articles</a>
-        <span>/</span>
-        <span class="text-foreground">Preview</span>
-      </nav>
+      <div class="flex items-center gap-3">
+        <BackButton href="/admin/articles" label="Back to Articles" />
+        <nav class="flex items-center gap-2 text-sm text-base-content/60">
+          <a href="/admin" class="hover:text-primary">Admin</a>
+          <span>/</span>
+          <a href="/admin/articles" class="hover:text-primary">Articles</a>
+          <span>/</span>
+          <span class="text-base-content">Preview</span>
+        </nav>
+      </div>
       <div class="flex gap-2">
-        <a href={`/admin/articles/${article.id}/edit`} class="inline-flex items-center gap-2 rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-sm font-medium shadow-sm hover:bg-primary/90 transition-colors">
+        <a href={`/admin/articles/${article.id}/edit`} class="inline-flex items-center gap-2 rounded-md bg-primary text-primary-content px-3 py-1.5 text-sm font-medium shadow-sm hover:bg-primary/90 transition-colors">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
           </svg>
           Edit Article
         </a>
-        <a href="/admin/articles" class="inline-flex items-center rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-secondary transition-colors">← Back</a>
+        <a href="/admin/articles" class="inline-flex items-center rounded-md px-3 py-1.5 text-sm font-medium text-base-content/60 hover:bg-base-200 transition-colors">← Back</a>
       </div>
     </div>
 
     <!-- Article preview card -->
-    <article class="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+    <article class="bg-base-100 rounded-xl border border-base-300 shadow-sm overflow-hidden">
       <!-- Status banner -->
       {!article.published && (
         <div class="bg-warning/10 border-b border-warning/30 px-6 py-2 flex items-center gap-2">
           <span class="inline-flex items-center rounded-md bg-warning/10 text-warning px-2 py-0.5 text-xs font-medium">Draft</span>
-          <span class="text-sm text-muted-foreground">This article is not yet published</span>
+          <span class="text-sm text-base-content/60">This article is not yet published</span>
         </div>
       )}
 
@@ -72,9 +76,9 @@ function formatDate(date: Date) {
       <div class="px-6 py-8 lg:px-12 lg:py-10 max-w-4xl mx-auto">
         <!-- Meta -->
         <div class="flex items-center gap-3 mb-4 flex-wrap">
-          <span class="inline-flex items-center rounded-md border border-border px-2 py-0.5 text-xs font-medium text-foreground">{article.category}</span>
-          <span class="text-sm text-muted-foreground">{formatDate(article.createdAt)}</span>
-          <div class="flex items-center gap-4 text-sm text-muted-foreground ml-auto">
+          <span class="inline-flex items-center rounded-md border border-base-300 px-2 py-0.5 text-xs font-medium text-base-content">{article.category}</span>
+          <span class="text-sm text-base-content/60">{formatDate(article.createdAt)}</span>
+          <div class="flex items-center gap-4 text-sm text-base-content/60 ml-auto">
             <span>{article.views.toLocaleString()} views</span>
             <span>{article.likes.toLocaleString()} likes</span>
             <span>{article.commentsCount.toLocaleString()} comments</span>
@@ -82,7 +86,7 @@ function formatDate(date: Date) {
         </div>
 
         <!-- Title -->
-        <h1 class="text-3xl lg:text-4xl font-bold text-foreground mb-6 leading-tight">
+        <h1 class="text-3xl lg:text-4xl font-bold text-base-content mb-6 leading-tight">
           {article.title}
         </h1>
 

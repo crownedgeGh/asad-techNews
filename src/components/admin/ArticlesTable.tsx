@@ -174,8 +174,8 @@ export default function ArticlesTable() {
       header: 'Title',
       render: (a) => (
         <div>
-          <p className="font-medium text-sm text-foreground line-clamp-1 max-w-xs">{a.title}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">{a.slug}</p>
+          <p className="font-medium text-sm text-base-content line-clamp-1 max-w-xs">{a.title}</p>
+          <p className="text-xs text-base-content/60 mt-0.5">{a.slug}</p>
         </div>
       ),
     },
@@ -211,13 +211,13 @@ export default function ArticlesTable() {
       key: 'actions',
       header: 'Actions',
       render: (a, index) => (
-        <div className="flex items-center gap-1 flex-wrap justify-end">
+        <div className="flex items-center gap-1 flex-wrap justify-end" onClick={(e) => e.stopPropagation()}>
           {a.isRemoved ? (
             <>
               <Button variant="ghost" size="xs" className="text-success" onClick={() => handleRestore(a)}>
                 <RotateCcw /> Restore
               </Button>
-              <Button variant="ghost" size="xs" className="text-destructive" onClick={() => setDeleteTarget(a)}>
+              <Button variant="ghost" size="xs" className="text-error" onClick={() => setDeleteTarget(a)}>
                 <Trash2 /> Delete
               </Button>
             </>
@@ -233,7 +233,7 @@ export default function ArticlesTable() {
                   <Pencil /> Edit
                 </a>
               </Button>
-              <Button variant="ghost" size="xs" className="text-destructive" onClick={() => setDeleteTarget(a)}>
+              <Button variant="ghost" size="xs" className="text-error" onClick={() => setDeleteTarget(a)}>
                 <Trash2 /> Remove
               </Button>
               {canReorder && (
@@ -241,7 +241,7 @@ export default function ArticlesTable() {
                   <button
                     onClick={() => handleReorder(a, 'up')}
                     disabled={index === 0}
-                    className="text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:pointer-events-none"
+                    className="text-base-content/60 hover:text-base-content disabled:opacity-30 disabled:pointer-events-none"
                     title="Move up"
                   >
                     <ArrowUp className="h-3.5 w-3.5" />
@@ -249,7 +249,7 @@ export default function ArticlesTable() {
                   <button
                     onClick={() => handleReorder(a, 'down')}
                     disabled={index === articles.length - 1}
-                    className="text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:pointer-events-none"
+                    className="text-base-content/60 hover:text-base-content disabled:opacity-30 disabled:pointer-events-none"
                     title="Move down"
                   >
                     <ArrowDown className="h-3.5 w-3.5" />
@@ -280,7 +280,7 @@ export default function ArticlesTable() {
               setPage(1);
             }}
           />
-          <Search className="h-4 w-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Search className="h-4 w-4 absolute right-3 top-1/2 -translate-y-1/2 text-base-content/60" />
         </div>
 
         <Select
@@ -308,6 +308,9 @@ export default function ArticlesTable() {
         data={articles}
         loading={loading}
         emptyMessage="No articles found."
+        onRowClick={(a) => {
+          if (!a.isRemoved) window.location.href = `/admin/articles/${a.id}/edit`;
+        }}
         renderMobileCard={(a, index) => {
           const dateStr = new Date(a.createdAt).toLocaleDateString('en-US', {
             month: 'short',
@@ -317,13 +320,18 @@ export default function ArticlesTable() {
           const viewsStr = a.views >= 1000 ? (a.views / 1000).toFixed(1) + 'K' : a.views;
 
           return (
-            <div className="flex gap-4 py-4 border-b border-border last:border-0 relative bg-card rounded-none sm:rounded-xl sm:border sm:border-border sm:p-4 sm:mb-4 sm:last:mb-0">
+            <div
+              className="flex gap-4 py-4 border-b border-base-300 last:border-0 relative bg-base-100 rounded-none sm:rounded-xl sm:border sm:border-base-300 sm:p-4 sm:mb-4 sm:last:mb-0 cursor-pointer"
+              onClick={() => {
+                if (!a.isRemoved) window.location.href = `/admin/articles/${a.id}/edit`;
+              }}
+            >
               {/* Cover Image */}
-              <div className="w-28 sm:w-40 h-20 sm:h-28 shrink-0 rounded-lg overflow-hidden bg-secondary relative">
+              <div className="w-28 sm:w-40 h-20 sm:h-28 shrink-0 rounded-lg overflow-hidden bg-base-200 relative">
                 {a.coverImage ? (
                   <img src={a.coverImage} alt={a.title} className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-muted-foreground/40">
+                  <div className="w-full h-full flex items-center justify-center text-base-content/60/40">
                     <ImageOff className="h-8 w-8" />
                   </div>
                 )}
@@ -331,10 +339,10 @@ export default function ArticlesTable() {
 
               {/* Content */}
               <div className="flex flex-col flex-1 justify-center min-w-0 pr-6 sm:pr-0">
-                <h3 className="font-bold text-base sm:text-xl line-clamp-2 leading-tight mb-2 text-foreground">
+                <h3 className="font-bold text-base sm:text-xl line-clamp-2 leading-tight mb-2 text-base-content">
                   {a.title}
                 </h3>
-                <p className="text-xs sm:text-sm text-muted-foreground font-medium mb-2">
+                <p className="text-xs sm:text-sm text-base-content/60 font-medium mb-2">
                   {dateStr} • {viewsStr} Views
                 </p>
                 <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-primary">
@@ -343,11 +351,11 @@ export default function ArticlesTable() {
               </div>
 
               {/* Actions Dropdown */}
-              <div className="absolute top-2 right-0 sm:top-4 sm:right-4">
+              <div className="absolute top-2 right-0 sm:top-4 sm:right-4" onClick={(e) => e.stopPropagation()}>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon-sm">
-                      <MoreVertical className="text-muted-foreground" />
+                      <MoreVertical className="text-base-content/60" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">

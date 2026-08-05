@@ -4,33 +4,30 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { Loader2 } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 
-const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-  {
-    variants: {
-      variant: {
-        default: 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90',
-        destructive: 'bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90',
-        outline: 'border border-border bg-card shadow-sm hover:bg-secondary text-foreground',
-        secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
-        ghost: 'hover:bg-secondary text-foreground',
-        link: 'text-primary underline-offset-4 hover:underline',
-      },
-      size: {
-        default: 'h-9 px-4 py-2 [&_svg]:size-4',
-        sm: 'h-8 rounded-md px-3 text-xs [&_svg]:size-3.5',
-        xs: 'h-6 rounded px-2 text-xs [&_svg]:size-3',
-        lg: 'h-10 rounded-md px-6 [&_svg]:size-4',
-        icon: 'h-9 w-9 [&_svg]:size-4',
-        'icon-sm': 'h-7 w-7 [&_svg]:size-3.5',
-      },
+const buttonVariants = cva('btn [&_svg]:pointer-events-none [&_svg]:shrink-0', {
+  variants: {
+    variant: {
+      default: 'btn-primary',
+      destructive: 'btn-error',
+      outline: 'btn-outline',
+      secondary: 'btn-secondary',
+      ghost: 'btn-ghost',
+      link: 'btn-link',
     },
-    defaultVariants: {
-      variant: 'default',
-      size: 'default',
+    size: {
+      default: '[&_svg]:size-4',
+      sm: 'btn-sm [&_svg]:size-3.5',
+      xs: 'btn-xs [&_svg]:size-3',
+      lg: 'btn-lg [&_svg]:size-4',
+      icon: 'btn-square [&_svg]:size-4',
+      'icon-sm': 'btn-square btn-sm [&_svg]:size-3.5',
     },
-  }
-);
+  },
+  defaultVariants: {
+    variant: 'default',
+    size: 'default',
+  },
+});
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,

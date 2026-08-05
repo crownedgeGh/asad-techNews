@@ -6,13 +6,13 @@ export default function ThemeToggle() {
   const [dark, setDark] = useState(false);
 
   useEffect(() => {
-    setDark(document.documentElement.classList.contains('dark'));
+    setDark(document.documentElement.getAttribute('data-theme') === 'dark');
   }, []);
 
   const toggle = () => {
     const next = !dark;
     setDark(next);
-    document.documentElement.classList.toggle('dark', next);
+    document.documentElement.setAttribute('data-theme', next ? 'dark' : 'emerald');
     localStorage.setItem('admin-theme', next ? 'dark' : 'light');
   };
 

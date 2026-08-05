@@ -8,9 +8,9 @@ export default function AdminToaster() {
       theme="system"
       toastOptions={{
         classNames: {
-          toast: 'bg-card! border-border! text-foreground! shadow-lg!',
-          title: 'text-foreground!',
-          description: 'text-muted-foreground!',
+          toast: 'bg-base-100! border-base-300! text-base-content! shadow-lg!',
+          title: 'text-base-content!',
+          description: 'text-base-content/60!',
         },
       }}
     />

@@ -166,10 +166,10 @@ export default function ArticleForm(props: ArticleFormProps) {
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <Label htmlFor="article-slug">Slug *</Label>
-          <span className="text-xs text-muted-foreground">Auto-generated from title</span>
+          <span className="text-xs text-base-content/60">Auto-generated from title</span>
         </div>
         <div className="flex w-full">
-          <span className="inline-flex items-center rounded-l-md border border-r-0 border-input bg-secondary px-3 text-sm text-muted-foreground">
+          <span className="inline-flex items-center rounded-l-md border border-r-0 border-base-300 bg-base-200 px-3 text-sm text-base-content/60">
             /article/
           </span>
           <Input
@@ -204,7 +204,7 @@ export default function ArticleForm(props: ArticleFormProps) {
           <Label htmlFor="article-published">Status</Label>
           <div className="flex items-center gap-3 h-9">
             <Switch id="article-published" checked={published} onCheckedChange={setPublished} />
-            <span className="text-sm text-foreground">{published ? 'Published' : 'Draft'}</span>
+            <span className="text-sm text-base-content">{published ? 'Published' : 'Draft'}</span>
           </div>
         </div>
       </div>
@@ -222,8 +222,8 @@ export default function ArticleForm(props: ArticleFormProps) {
           </Button>
           {coverImage && (
             <div className="flex items-center gap-2">
-              <img src={coverImage} alt="Cover preview" className="h-12 w-20 object-cover rounded-lg border border-border" />
-              <Button type="button" variant="ghost" size="icon-sm" className="text-destructive" onClick={() => setCoverImage('')}>
+              <img src={coverImage} alt="Cover preview" className="h-12 w-20 object-cover rounded-lg border border-base-300" />
+              <Button type="button" variant="ghost" size="icon-sm" className="text-error" onClick={() => setCoverImage('')}>
                 <X />
               </Button>
             </div>
