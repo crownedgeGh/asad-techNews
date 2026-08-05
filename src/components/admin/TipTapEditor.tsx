@@ -52,7 +52,7 @@ export default function TipTapEditor({
     editorProps: {
       attributes: {
         class:
-          'prose prose-sm max-w-none min-h-[360px] p-4 focus:outline-none',
+          'prose prose-sm max-w-none min-h-[360px] p-4 focus:outline-none article-content-font',
       },
     },
   });

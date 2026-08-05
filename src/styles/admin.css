@@ -10,6 +10,8 @@
 @theme {
   --font-body: 'Poppins', system-ui, sans-serif;
   --font-heading: 'Playfair Display', Georgia, serif;
+  --font-article-body: 'Merriweather', Georgia, 'Source Serif 4', Lora, serif;
+  --font-article-heading: 'Inter', Roboto, 'Helvetica Neue', 'Source Sans 3', sans-serif;
 }
 
 @layer base {
@@ -21,4 +23,22 @@
     font-family: var(--font-heading);
     font-weight: 600;
   }
+}
+
+/* Article content (TipTap editor + rendered article body) is locked to the
+   editorial typography system, independent of the admin UI's own fonts. */
+.article-content-font,
+.article-content-font p,
+.article-content-font li,
+.article-content-font blockquote {
+  font-family: var(--font-article-body);
+}
+
+.article-content-font h1,
+.article-content-font h2,
+.article-content-font h3,
+.article-content-font h4,
+.article-content-font h5,
+.article-content-font h6 {
+  font-family: var(--font-article-heading);
 }
