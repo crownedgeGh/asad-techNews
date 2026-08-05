@@ -4,6 +4,7 @@ import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
 import Underline from '@tiptap/extension-underline';
+import Placeholder from '@tiptap/extension-placeholder';
 import { toast } from 'sonner';
 import {
   Bold,
@@ -49,8 +50,9 @@ export default function TipTapEditor({
       Image,
       Underline,
       Link.configure({ openOnClick: false }),
+      Placeholder.configure({ placeholder }),
     ],
-    content: initialContent || `<p>${placeholder}</p>`,
+    content: initialContent,
     onUpdate: ({ editor }) => {
       onChange?.(editor.getHTML());
     },
@@ -66,8 +68,8 @@ export default function TipTapEditor({
   React.useEffect(() => {
     if (!editor || initialContent === loadedContentRef.current) return;
     loadedContentRef.current = initialContent;
-    editor.commands.setContent(initialContent || `<p>${placeholder}</p>`);
-  }, [editor, initialContent, placeholder]);
+    editor.commands.setContent(initialContent);
+  }, [editor, initialContent]);
 
   if (!editor) {
     return (

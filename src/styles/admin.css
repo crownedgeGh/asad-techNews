@@ -42,3 +42,12 @@
 .article-content-font h6 {
   font-family: var(--font-article-heading);
 }
+
+.article-content-font p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  color: var(--base-content, currentColor);
+  opacity: 0.4;
+  pointer-events: none;
+}
