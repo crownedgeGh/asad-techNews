@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { LayoutDashboard, Newspaper, Menu, Zap } from 'lucide-react';
 import { Sheet, SheetTrigger, SheetContent, SheetTitle } from './ui/sheet';
 import { Button } from './ui/button';
 import { cn } from '../../lib/utils';
+import { useAdminContext } from '../../context/AdminContext';
 
 const NAV_ITEMS = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
@@ -10,12 +11,12 @@ const NAV_ITEMS = [
 ];
 
 export default function MobileNav({ pathname }: { pathname: string }) {
-  const [open, setOpen] = useState(false);
+  const { mobileNavOpen, setMobileNavOpen } = useAdminContext();
 
   const isActive = (href: string, exact: boolean) => (exact ? pathname === href : pathname.startsWith(href));
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
+    <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
       <SheetTrigger asChild>
         <Button variant="ghost" size="icon" aria-label="Open menu" className="lg:hidden">
           <Menu />
@@ -32,7 +33,7 @@ export default function MobileNav({ pathname }: { pathname: string }) {
             <a
               key={href}
               href={href}
-              onClick={() => setOpen(false)}
+              onClick={() => setMobileNavOpen(false)}
               className={cn(
                 'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
                 isActive(href, exact)

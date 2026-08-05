@@ -1,7 +1,6 @@
 ---
 import '../styles/admin.css';
-import MobileNav from '../components/admin/MobileNav';
-import ThemeToggle from '../components/admin/ThemeToggle';
+import AdminHeader from '../components/admin/AdminHeader';
 import AdminToaster from '../components/admin/AdminToaster';
 
 interface Props {
@@ -88,22 +87,7 @@ const isActive = (href: string, exact: boolean) => (exact ? pathname === href : 
 
       <div class="flex flex-col min-h-screen">
         <!-- Top bar -->
-        <header class="flex items-center gap-3 border-b border-base-300 bg-base-100 px-4 py-3 sticky top-0 z-20">
-          <MobileNav pathname={pathname} client:load />
-          <span class="text-lg font-bold tracking-tight lg:hidden">Lumen Admin</span>
-          <div class="flex-1"></div>
-          <ThemeToggle client:load />
-          <a
-            href="/"
-            target="_blank"
-            class="inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium text-base-content/60 hover:text-base-content hover:bg-base-200 transition-colors"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
-            <span class="hidden sm:inline">View Site</span>
-          </a>
-        </header>
+        <AdminHeader pathname={pathname} client:load />
 
         <!-- Main content -->
         <main class="flex-1 p-4 sm:p-6 lg:p-8 max-w-screen-2xl w-full mx-auto">
