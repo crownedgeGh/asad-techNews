@@ -1,7 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { toast } from 'sonner';
-import { Upload, X, Loader2 } from 'lucide-react';
+import { Upload, X, Loader2, Eye } from 'lucide-react';
 import TipTapEditor from './TipTapEditor';
+import { ArticlePreviewModal } from './ArticlePreviewModal';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Button } from './ui/button';
@@ -58,6 +59,7 @@ function ArticleFormInner(props: ArticleFormProps) {
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [loadingArticle, setLoadingArticle] = useState(mode === 'edit' && !cachedArticle);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   React.useEffect(() => {
     if (mode !== 'edit' || !props.articleId || initialData) return;
@@ -179,7 +181,15 @@ function ArticleFormInner(props: ArticleFormProps) {
   }
 
   return (
+    <>
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Preview */}
+      <div className="flex justify-end">
+        <Button type="button" variant="outline" size="sm" onClick={() => setPreviewOpen(true)}>
+          <Eye /> Preview
+        </Button>
+      </div>
+
       {/* Title */}
       <div className="space-y-2">
         <Label htmlFor="article-title">Title *</Label>
@@ -285,6 +295,17 @@ function ArticleFormInner(props: ArticleFormProps) {
         </Button>
       </div>
     </form>
+
+    <ArticlePreviewModal
+      open={previewOpen}
+      onOpenChange={setPreviewOpen}
+      title={title}
+      category={category}
+      coverImage={coverImage}
+      content={content}
+      published={published}
+    />
+    </>
   );
 }
 
