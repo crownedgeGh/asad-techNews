@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { X, Sun, Moon, ImageOff } from 'lucide-react';
 import { formatDate, estimateReadTime } from '../../lib/format';
@@ -31,11 +31,35 @@ export function ArticlePreviewModal({
   published,
 }: ArticlePreviewModalProps) {
   const [dark, setDark] = useState(prefersDarkByDefault);
+  const [renderedContent, setRenderedContent] = useState(content);
 
   const authorName = 'Staff Writer';
   const dateStr = formatDate(new Date());
   const timeToRead = estimateReadTime(content || '');
   const hasContent = !!content && content.trim() !== '' && content !== '<p></p>';
+
+  useEffect(() => {
+    if (!open || !hasContent) {
+      setRenderedContent(content);
+      return;
+    }
+    let cancelled = false;
+    fetch('/api/admin/render-preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content }),
+    })
+      .then((res) => (res.ok ? res.json() : Promise.reject()))
+      .then((data) => {
+        if (!cancelled) setRenderedContent(data.content);
+      })
+      .catch(() => {
+        if (!cancelled) setRenderedContent(content);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, content, hasContent]);
 
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
@@ -128,7 +152,7 @@ export function ArticlePreviewModal({
 
                 <div className="prose prose-lg max-w-none prose-a:text-[#00B2A9] hover:prose-a:text-[#099e96] dark:prose-invert">
                   {hasContent ? (
-                    <div dangerouslySetInnerHTML={{ __html: content }} />
+                    <div dangerouslySetInnerHTML={{ __html: renderedContent }} />
                   ) : (
                     <p className="italic text-slate-400 dark:text-slate-500">
                       Nothing written yet — start adding content to see it here.
