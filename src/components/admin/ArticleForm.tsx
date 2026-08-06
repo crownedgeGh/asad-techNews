@@ -8,6 +8,12 @@ import { Button } from './ui/button';
 import { Switch } from './ui/switch';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from './ui/select';
 import { CATEGORIES } from '../../lib/categories';
+import { AdminStoreProvider } from '../../store/AdminStoreProvider';
+import { useAppDispatch, useAppSelector } from '../../store';
+import { setArticleDetailCache, clearArticleDetailCache, clearArticlesListCache } from '../../store/slices/adminSlice';
+
+// Cached article detail is shown instantly; entries older than this are refreshed silently in the background.
+const FRESH_MS = 30_000;
 
 export interface ArticleData {
   id?: number;
@@ -34,38 +40,61 @@ function slugify(text: string) {
     .replace(/-+/g, '-');
 }
 
-export default function ArticleForm(props: ArticleFormProps) {
+function ArticleFormInner(props: ArticleFormProps) {
   const { initialData, mode } = props;
-  const [title, setTitle] = useState(initialData?.title ?? '');
-  const [slug, setSlug] = useState(initialData?.slug ?? '');
-  const [slugManual, setSlugManual] = useState(!!initialData?.slug);
-  const [content, setContent] = useState(initialData?.content ?? '');
-  const [category, setCategory] = useState(initialData?.category ?? '');
-  const [coverImage, setCoverImage] = useState(initialData?.coverImage ?? '');
-  const [published, setPublished] = useState(initialData?.published ?? false);
+  const dispatch = useAppDispatch();
+  const cached = useAppSelector((s) =>
+    mode === 'edit' && props.articleId ? s.admin.articleDetailCache[props.articleId] : undefined
+  );
+  const cachedArticle = initialData ?? cached?.article;
+
+  const [title, setTitle] = useState(cachedArticle?.title ?? '');
+  const [slug, setSlug] = useState(cachedArticle?.slug ?? '');
+  const [slugManual, setSlugManual] = useState(!!cachedArticle?.slug);
+  const [content, setContent] = useState(cachedArticle?.content ?? '');
+  const [category, setCategory] = useState(cachedArticle?.category ?? '');
+  const [coverImage, setCoverImage] = useState(cachedArticle?.coverImage ?? '');
+  const [published, setPublished] = useState(cachedArticle?.published ?? false);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [loadingArticle, setLoadingArticle] = useState(mode === 'edit' && !initialData);
+  const [loadingArticle, setLoadingArticle] = useState(mode === 'edit' && !cachedArticle);
 
   React.useEffect(() => {
-    if (mode === 'edit' && props.articleId && !initialData) {
+    if (mode !== 'edit' || !props.articleId || initialData) return;
+
+    const applyArticle = (article: any) => {
+      setTitle(article.title);
+      setSlug(article.slug);
+      setSlugManual(true);
+      setContent(article.content);
+      setCategory(article.category);
+      setCoverImage(article.coverImage ?? '');
+      setPublished(article.published);
+    };
+
+    const loadFresh = (silent: boolean) =>
       fetch(`/api/admin/articles/${props.articleId}`)
         .then((res) => {
           if (!res.ok) throw new Error('Failed to load article');
           return res.json();
         })
         .then((article) => {
-          setTitle(article.title);
-          setSlug(article.slug);
-          setSlugManual(true);
-          setContent(article.content);
-          setCategory(article.category);
-          setCoverImage(article.coverImage ?? '');
-          setPublished(article.published);
+          applyArticle(article);
+          dispatch(setArticleDetailCache({ id: props.articleId!, entry: { article, fetchedAt: Date.now() } }));
         })
-        .catch(() => toast.error('Failed to load article'))
+        .catch(() => {
+          if (!silent) toast.error('Failed to load article');
+        })
         .finally(() => setLoadingArticle(false));
+
+    if (cached) {
+      // Cache hit: fields are already populated from cachedArticle above, no spinner needed.
+      setLoadingArticle(false);
+      if (Date.now() - cached.fetchedAt > FRESH_MS) loadFresh(true);
+    } else {
+      loadFresh(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, props.articleId, initialData]);
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -125,6 +154,11 @@ export default function ArticleForm(props: ArticleFormProps) {
       }
 
       toast.success(mode === 'edit' ? 'Article updated successfully!' : 'Article created successfully!');
+
+      // Data changed — drop cached list/detail results so the articles page and any
+      // other tabs on this device re-fetch instead of showing stale cached content.
+      dispatch(clearArticlesListCache());
+      if (id) dispatch(clearArticleDetailCache(id));
 
       setTimeout(() => {
         window.location.href = '/admin/articles';
@@ -251,5 +285,13 @@ export default function ArticleForm(props: ArticleFormProps) {
         </Button>
       </div>
     </form>
+  );
+}
+
+export default function ArticleForm(props: ArticleFormProps) {
+  return (
+    <AdminStoreProvider>
+      <ArticleFormInner {...props} />
+    </AdminStoreProvider>
   );
 }

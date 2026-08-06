@@ -18,7 +18,7 @@ const articleId = parseInt(id!, 10);
     </div>
 
     <div class="bg-base-100 rounded-xl border border-base-300 shadow-sm p-6 lg:p-8">
-      <ArticleForm mode="edit" articleId={articleId} client:load />
+      <ArticleForm mode="edit" articleId={articleId} client:only="react" />
     </div>
   </div>
 </AdminLayout>
