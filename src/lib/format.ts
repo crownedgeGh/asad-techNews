@@ -6,6 +6,20 @@ export function formatDate(date: Date | string) {
   });
 }
 
+export function formatDateTime(date: Date | string) {
+  const d = new Date(date);
+  const datePart = d.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  const timePart = d.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+  return `${datePart} • ${timePart}`;
+}
+
 export function formatViews(n: number) {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;

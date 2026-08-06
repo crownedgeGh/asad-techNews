@@ -12,7 +12,7 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { AdminStoreProvider } from '../../store/AdminStoreProvider';
 import { useAppDispatch, useAppSelector } from '../../store';
 import { setArticlesFilters, setArticlesListCache, clearArticlesListCache, type CachedArticle } from '../../store/slices/adminSlice';
-import { excerptFromContent } from '../../lib/format';
+import { formatDateTime } from '../../lib/format';
 
 type Article = CachedArticle;
 
@@ -158,7 +158,7 @@ function ArticlesTableInner() {
           <div className="min-w-0">
             <p className="font-medium text-sm text-base-content line-clamp-1 max-w-xs">{a.title}</p>
             <p className="text-xs text-base-content/60 mt-0.5 line-clamp-1 max-w-xs">
-              {a.content ? excerptFromContent(a.content, 80) : ''}
+              {formatDateTime(a.createdAt)}
             </p>
           </div>
         </div>
@@ -297,11 +297,7 @@ function ArticlesTableInner() {
           window.location.href = `/admin/articles/${a.id}/edit`;
         }}
         renderMobileCard={(a, index) => {
-          const dateStr = new Date(a.createdAt).toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-          });
+          const dateStr = formatDateTime(a.createdAt);
           const viewsStr = a.views >= 1000 ? (a.views / 1000).toFixed(1) + 'K' : a.views;
 
           return (

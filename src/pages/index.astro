@@ -4,7 +4,7 @@ import ArticleCard from '../components/ArticleCard.astro';
 import { db } from '../db';
 import { articles } from '../db/schema';
 import { eq, asc, desc } from 'drizzle-orm';
-import { formatDate, formatViews, excerptFromContent } from '../lib/format';
+import { formatDate, formatViews } from '../lib/format';
 
 export const prerender = false;
 
@@ -38,7 +38,6 @@ try {
             {allArticles.map(article => (
               <ArticleCard
                 title={article.title}
-                excerpt={excerptFromContent(article.content)}
                 imageUrl={article.coverImage || '/logo.png'}
                 category={article.category}
                 slug={article.slug}
