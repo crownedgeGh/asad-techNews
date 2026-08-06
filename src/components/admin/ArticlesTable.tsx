@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
-import { Eye, Pencil, Trash2, MoreVertical, ArrowUp, ArrowDown, Search, ImageOff, Trash } from 'lucide-react';
+import { Eye, Pencil, Trash2, MoreVertical, ArrowUp, ArrowDown, Search, ImageOff, Trash, RefreshCw } from 'lucide-react';
 import { AdminTable, type Column } from './AdminTable';
 import { ConfirmModal } from './ConfirmModal';
 import { Input } from './ui/input';
@@ -9,21 +9,11 @@ import { Badge } from './ui/badge';
 import { Pagination } from './ui/pagination';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from './ui/select';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from './ui/dropdown-menu';
+import { AdminStoreProvider } from '../../store/AdminStoreProvider';
+import { useAppDispatch, useAppSelector } from '../../store';
+import { setArticlesFilters, setArticlesListCache, clearArticlesListCache, type CachedArticle } from '../../store/slices/adminSlice';
 
-interface Article {
-  id: number;
-  title: string;
-  slug: string;
-  category: string;
-  published: boolean;
-  views: number;
-  likes: number;
-  commentsCount: number;
-  sortOrder: number;
-  createdAt: string;
-  content?: string;
-  coverImage?: string;
-}
+type Article = CachedArticle;
 
 const FILTERS = [
   { value: 'all', label: 'All Articles' },
@@ -33,22 +23,38 @@ const FILTERS = [
   { value: 'most_liked', label: 'Most Liked' },
 ];
 
-export default function ArticlesTable() {
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
+// Cached list results are shown instantly; entries older than this are refreshed silently in the background.
+const FRESH_MS = 30_000;
+
+function cacheKey(page: number, filter: string, searchQuery: string) {
+  return `${filter}|${page}|${searchQuery.trim()}`;
+}
+
+function ArticlesTableInner() {
+  const dispatch = useAppDispatch();
+  const filters = useAppSelector((s) => s.admin.articlesFilters);
+  const listCache = useAppSelector((s) => s.admin.articlesListCache);
+  const { page, filter, searchQuery } = filters;
+
+  const key = cacheKey(page, filter, searchQuery);
+  const cached = listCache[key];
+
+  const [articles, setArticles] = useState<Article[]>(cached?.articles ?? []);
+  const [total, setTotal] = useState(cached?.total ?? 0);
+  const [loading, setLoading] = useState(!cached);
+  const [refreshing, setRefreshing] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Article | null>(null);
   const [deleteAllOpen, setDeleteAllOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filter, setFilter] = useState('all');
   const pageSize = 15;
 
-  const fetchArticles = useCallback(async (p: number, opts: { silent?: boolean } = {}) => {
-    if (!opts.silent) setLoading(true);
+  const setPage = (v: number) => dispatch(setArticlesFilters({ page: v }));
+
+  const fetchArticles = useCallback(async (p: number, f: string, q: string, opts: { silent?: boolean } = {}) => {
+    if (opts.silent) setRefreshing(true);
+    else setLoading(true);
     try {
-      const params = new URLSearchParams({ page: String(p), filter });
-      if (searchQuery.trim()) params.set('search', searchQuery.trim());
+      const params = new URLSearchParams({ page: String(p), filter: f });
+      if (q.trim()) params.set('search', q.trim());
 
       const res = await fetch(`/api/admin/articles?${params.toString()}`);
       if (!res.ok) throw new Error('Failed to load articles');
@@ -56,16 +62,33 @@ export default function ArticlesTable() {
 
       setArticles(data.articles);
       setTotal(data.total);
+      dispatch(setArticlesListCache({
+        key: cacheKey(p, f, q),
+        entry: { articles: data.articles, total: data.total, fetchedAt: Date.now() },
+      }));
     } catch {
       toast.error('Failed to load articles');
     } finally {
-      if (!opts.silent) setLoading(false);
+      setLoading(false);
+      setRefreshing(false);
     }
-  }, [searchQuery, filter]);
+  }, [dispatch]);
 
   useEffect(() => {
-    fetchArticles(page);
-  }, [page, fetchArticles]);
+    const entry = listCache[key];
+    if (entry) {
+      // Cache hit: render instantly, no blocking spinner. Revalidate quietly if it's gone a bit stale.
+      setArticles(entry.articles);
+      setTotal(entry.total);
+      setLoading(false);
+      if (Date.now() - entry.fetchedAt > FRESH_MS) {
+        fetchArticles(page, filter, searchQuery, { silent: true });
+      }
+    } else {
+      fetchArticles(page, filter, searchQuery);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
@@ -74,7 +97,8 @@ export default function ArticlesTable() {
       if (!res.ok) throw new Error('Failed to delete article');
 
       toast.success(`"${deleteTarget.title}" deleted`);
-      fetchArticles(page, { silent: true });
+      dispatch(clearArticlesListCache());
+      fetchArticles(page, filter, searchQuery, { silent: true });
     } catch {
       toast.error('Failed to delete article');
     } finally {
@@ -88,8 +112,9 @@ export default function ArticlesTable() {
       if (!res.ok) throw new Error('Failed to delete all articles');
 
       toast.success('All articles deleted');
+      dispatch(clearArticlesListCache());
       setPage(1);
-      fetchArticles(1, { silent: true });
+      fetchArticles(1, filter, searchQuery, { silent: true });
     } catch {
       toast.error('Failed to delete all articles');
     } finally {
@@ -105,7 +130,8 @@ export default function ArticlesTable() {
         body: JSON.stringify({ direction }),
       });
       if (!res.ok) throw new Error('Failed to reorder article');
-      await fetchArticles(page, { silent: true });
+      dispatch(clearArticlesListCache());
+      await fetchArticles(page, filter, searchQuery, { silent: true });
     } catch {
       toast.error('Failed to reorder article');
     }
@@ -208,8 +234,7 @@ export default function ArticlesTable() {
             className="pr-9"
             value={searchQuery}
             onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setPage(1);
+              dispatch(setArticlesFilters({ searchQuery: e.target.value, page: 1 }));
             }}
           />
           <Search className="h-4 w-4 absolute right-3 top-1/2 -translate-y-1/2 text-base-content/60" />
@@ -218,8 +243,7 @@ export default function ArticlesTable() {
         <Select
           value={filter}
           onValueChange={(v) => {
-            setFilter(v);
-            setPage(1);
+            dispatch(setArticlesFilters({ filter: v, page: 1 }));
           }}
         >
           <SelectTrigger className="w-full sm:w-56">
@@ -233,6 +257,12 @@ export default function ArticlesTable() {
             ))}
           </SelectContent>
         </Select>
+
+        {refreshing && (
+          <span className="hidden sm:inline-flex items-center gap-1.5 text-xs text-base-content/60 shrink-0">
+            <RefreshCw className="h-3 w-3 animate-spin" /> Refreshing…
+          </span>
+        )}
 
         <Button
           variant="outline"
@@ -360,5 +390,13 @@ export default function ArticlesTable() {
         onCancel={() => setDeleteAllOpen(false)}
       />
     </>
+  );
+}
+
+export default function ArticlesTable() {
+  return (
+    <AdminStoreProvider>
+      <ArticlesTableInner />
+    </AdminStoreProvider>
   );
 }
