@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { X, Sun, Moon, ImageOff } from 'lucide-react';
+import { X, Sun, Moon, ImageOff, RefreshCw } from 'lucide-react';
 import { formatDate, estimateReadTime } from '../../lib/format';
 
 interface ArticlePreviewModalProps {
@@ -31,6 +31,29 @@ export function ArticlePreviewModal({
   published,
 }: ArticlePreviewModalProps) {
   const [dark, setDark] = useState(prefersDarkByDefault);
+  const [renderedContent, setRenderedContent] = useState(content);
+  const [enrichingPreviews, setEnrichingPreviews] = useState(false);
+
+  // Standalone pasted links (e.g. a bare YouTube URL) render as rich embeds/cards on the
+  // public site via injectLinkPreviews — replicate that here so the preview matches exactly.
+  useEffect(() => {
+    if (!open) return;
+    setRenderedContent(content);
+    setEnrichingPreviews(true);
+    const controller = new AbortController();
+    fetch('/api/admin/preview-content', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content }),
+      signal: controller.signal,
+    })
+      .then((res) => (res.ok ? res.json() : Promise.reject()))
+      .then((data) => setRenderedContent(data.html))
+      .catch(() => {})
+      .finally(() => setEnrichingPreviews(false));
+    return () => controller.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const authorName = 'Staff Writer';
   const dateStr = formatDate(new Date());
@@ -56,6 +79,11 @@ export function ArticlePreviewModal({
               {!published && (
                 <span className="hidden shrink-0 items-center rounded-md bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning sm:inline-flex">
                   Draft — not published
+                </span>
+              )}
+              {enrichingPreviews && (
+                <span className="hidden shrink-0 items-center gap-1.5 text-xs text-base-content/60 sm:inline-flex">
+                  <RefreshCw className="h-3 w-3 animate-spin" /> Loading link previews…
                 </span>
               )}
             </div>
@@ -128,7 +156,7 @@ export function ArticlePreviewModal({
 
                 <div className="prose prose-lg max-w-none prose-a:text-[#00B2A9] hover:prose-a:text-[#099e96] dark:prose-invert">
                   {hasContent ? (
-                    <div dangerouslySetInnerHTML={{ __html: content }} />
+                    <div dangerouslySetInnerHTML={{ __html: renderedContent }} />
                   ) : (
                     <p className="italic text-slate-400 dark:text-slate-500">
                       Nothing written yet — start adding content to see it here.
