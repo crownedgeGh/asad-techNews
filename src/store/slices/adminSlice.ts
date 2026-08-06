@@ -14,6 +14,7 @@ export interface CachedArticle {
   createdAt: string;
   content?: string;
   coverImage?: string;
+  credit?: string;
 }
 
 export interface ArticleListCacheEntry {
@@ -32,6 +33,7 @@ export interface ArticleDetailCacheEntry {
     coverImage: string;
     published: boolean;
     trending: boolean;
+    credit?: string;
   };
   fetchedAt: number;
 }

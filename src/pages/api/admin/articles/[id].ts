@@ -32,7 +32,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
   try {
     const id = parseInt(params.id!, 10);
     const body = await request.json();
-    const { title, slug, content, category, coverImage, published, trending } = body;
+    const { title, slug, content, category, coverImage, published, trending, credit } = body;
 
     const [updated] = await db
       .update(articles)
@@ -44,6 +44,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
         coverImage: coverImage ?? null,
         published: published ?? false,
         trending: trending ?? false,
+        credit: credit ?? null,
         updatedAt: new Date(),
       })
       .where(eq(articles.id, id))
@@ -88,6 +89,7 @@ export const PATCH: APIRoute = async ({ params, request }) => {
     if (body.coverImage !== undefined) updateData.coverImage = body.coverImage;
     if (body.published !== undefined) updateData.published = body.published;
     if (body.trending !== undefined) updateData.trending = body.trending;
+    if (body.credit !== undefined) updateData.credit = body.credit;
     updateData.updatedAt = new Date();
 
     const [updated] = await db

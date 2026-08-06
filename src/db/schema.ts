@@ -29,6 +29,7 @@ export const articles = pgTable('articles', {
   category: text('category').notNull(),
   published: boolean('published').default(false).notNull(),
   trending: boolean('trending').default(false).notNull(),
+  credit: text('credit'),
   views: integer('views').default(0).notNull(),
   likes: integer('likes').default(0).notNull(),
   commentsCount: integer('comments_count').default(0).notNull(),

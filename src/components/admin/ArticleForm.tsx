@@ -25,6 +25,7 @@ export interface ArticleData {
   coverImage: string;
   published: boolean;
   trending?: boolean;
+  credit?: string;
 }
 
 interface ArticleFormProps {
@@ -58,6 +59,7 @@ function ArticleFormInner(props: ArticleFormProps) {
   const [coverImage, setCoverImage] = useState(cachedArticle?.coverImage ?? '');
   const [published, setPublished] = useState(cachedArticle?.published ?? false);
   const [trending, setTrending] = useState(cachedArticle?.trending ?? false);
+  const [credit, setCredit] = useState(cachedArticle?.credit ?? '');
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [loadingArticle, setLoadingArticle] = useState(mode === 'edit' && !cachedArticle);
@@ -75,6 +77,7 @@ function ArticleFormInner(props: ArticleFormProps) {
       setCoverImage(article.coverImage ?? '');
       setPublished(article.published);
       setTrending(article.trending ?? false);
+      setCredit(article.credit ?? '');
     };
 
     const loadFresh = (silent: boolean) =>
@@ -150,7 +153,7 @@ function ArticleFormInner(props: ArticleFormProps) {
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, slug, content, category, coverImage, published, trending }),
+        body: JSON.stringify({ title, slug, content, category, coverImage, published, trending, credit }),
       });
 
       if (!res.ok) {
@@ -224,6 +227,17 @@ function ArticleFormInner(props: ArticleFormProps) {
             required
           />
         </div>
+      </div>
+
+      {/* Source Credit */}
+      <div className="space-y-2">
+        <Label htmlFor="article-credit">Source Credit</Label>
+        <Input
+          id="article-credit"
+          value={credit}
+          onChange={(e) => setCredit(e.target.value)}
+          placeholder="e.g. BBC News, TechCrunch, or leave empty if original"
+        />
       </div>
 
       {/* Category + Published + Trending row */}

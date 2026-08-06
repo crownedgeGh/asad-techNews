@@ -27,6 +27,7 @@ const rows = await db
     commentsCount: articles.commentsCount,
     createdAt: articles.createdAt,
     authorName: users.name,
+    credit: articles.credit,
   })
   .from(articles)
   .leftJoin(users, eq(articles.authorId, users.id))
@@ -46,6 +47,7 @@ db.update(articles)
 
 const currentUrl = Astro.url.href;
 const authorName = article.authorName ?? 'Staff Writer';
+const displayName = article.credit ? `Credit: ${article.credit}` : authorName;
 const dateStr = formatDate(article.createdAt);
 const timeToRead = estimateReadTime(article.content);
 const coverImage = article.coverImage || '/logo.png';
@@ -90,11 +92,8 @@ try {
             {article.title}
           </h1>
           <div class="flex items-center gap-4">
-            <div class="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xl font-bold text-slate-500 dark:text-slate-400">
-              {authorName.charAt(0)}
-            </div>
             <div>
-              <p class="font-medium text-slate-900 dark:text-white">{authorName}</p>
+              <p class="font-medium text-slate-900 dark:text-white">{displayName}</p>
               <p class="text-sm text-slate-500 dark:text-slate-400">{article.category}</p>
             </div>
           </div>
@@ -125,15 +124,17 @@ try {
         <Comments client:load articleId={article.id} />
 
         {/* Author Bio Box */}
-        <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-8 my-8 flex flex-col sm:flex-row gap-6 items-center sm:items-start border border-slate-200 dark:border-slate-700/50">
-           <div class="w-24 h-24 rounded-full bg-slate-200 dark:bg-slate-700 shrink-0 flex items-center justify-center text-3xl font-extrabold text-slate-400 dark:text-slate-500">
-             {authorName.charAt(0)}
-           </div>
-           <div>
-             <h4 class="text-xl font-bold text-slate-900 dark:text-white mb-2">About {authorName}</h4>
-             <p class="text-slate-600 dark:text-slate-300">Contributor at The Lumen Tech, covering {article.category.toLowerCase()}.</p>
-           </div>
-        </div>
+        {!article.credit && (
+          <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-8 my-8 flex flex-col sm:flex-row gap-6 items-center sm:items-start border border-slate-200 dark:border-slate-700/50">
+             <div class="w-24 h-24 rounded-full bg-slate-200 dark:bg-slate-700 shrink-0 flex items-center justify-center text-3xl font-extrabold text-slate-400 dark:text-slate-500">
+               {authorName.charAt(0).toUpperCase()}
+             </div>
+             <div>
+               <h4 class="text-xl font-bold text-slate-900 dark:text-white mb-2">About {authorName}</h4>
+               <p class="text-slate-600 dark:text-slate-300">Contributor at The Lumen Tech, covering {article.category.toLowerCase()}.</p>
+             </div>
+          </div>
+        )}
 
         {/* Related Articles */}
         <RelatedArticles category={article.category} excludeSlug={article.slug} />
