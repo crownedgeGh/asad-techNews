@@ -12,6 +12,7 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { AdminStoreProvider } from '../../store/AdminStoreProvider';
 import { useAppDispatch, useAppSelector } from '../../store';
 import { setArticlesFilters, setArticlesListCache, clearArticlesListCache, type CachedArticle } from '../../store/slices/adminSlice';
+import { excerptFromContent } from '../../lib/format';
 
 type Article = CachedArticle;
 
@@ -144,9 +145,22 @@ function ArticlesTableInner() {
       key: 'title',
       header: 'Title',
       render: (a) => (
-        <div>
-          <p className="font-medium text-sm text-base-content line-clamp-1 max-w-xs">{a.title}</p>
-          <p className="text-xs text-base-content/60 mt-0.5">{a.slug}</p>
+        <div className="flex items-center gap-3">
+          <div className="w-16 h-11 shrink-0 rounded-md overflow-hidden bg-base-200">
+            {a.coverImage ? (
+              <img src={a.coverImage} alt={a.title} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-base-content/40">
+                <ImageOff className="h-4 w-4" />
+              </div>
+            )}
+          </div>
+          <div className="min-w-0">
+            <p className="font-medium text-sm text-base-content line-clamp-1 max-w-xs">{a.title}</p>
+            <p className="text-xs text-base-content/60 mt-0.5 line-clamp-1 max-w-xs">
+              {a.content ? excerptFromContent(a.content, 80) : ''}
+            </p>
+          </div>
         </div>
       ),
     },

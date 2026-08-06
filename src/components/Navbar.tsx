@@ -69,9 +69,6 @@ export default function Navbar() {
               <FiSun className="h-5 w-5 hidden dark:block" />
               <FiMoon className="h-5 w-5 dark:hidden block" />
             </button>
-            <a href="#" className="inline-flex items-center justify-center px-6 py-2.5 text-sm font-medium text-white bg-primary hover:bg-secondary rounded-md transition-colors shadow-sm hover:shadow-md">
-              Get Started
-            </a>
           </div>
 
           {/* Mobile Menu Button */}
@@ -106,11 +103,6 @@ export default function Navbar() {
                 {link.name}
               </a>
             ))}
-            <div className="px-3 mt-4">
-              <a href="#" className="block w-full text-center px-6 py-3 text-base font-medium text-white bg-primary hover:bg-secondary rounded-md transition-colors">
-                Get Started
-              </a>
-            </div>
           </div>
         </div>
       )}
