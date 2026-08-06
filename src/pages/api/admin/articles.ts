@@ -76,7 +76,7 @@ export const DELETE: APIRoute = async () => {
 export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json();
-    const { title, slug, content, category, coverImage, published } = body;
+    const { title, slug, content, category, coverImage, published, trending } = body;
 
     if (!title || !slug || !content || !category) {
       return new Response(
@@ -99,6 +99,7 @@ export const POST: APIRoute = async ({ request }) => {
         category,
         coverImage: coverImage ?? null,
         published: published ?? false,
+        trending: trending ?? false,
         sortOrder: (maxOrder ?? 0) + 1,
       })
       .returning();

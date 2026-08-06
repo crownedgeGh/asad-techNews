@@ -3,7 +3,7 @@ import Layout from '../layouts/Layout.astro';
 import ArticleCard from '../components/ArticleCard.astro';
 import { db } from '../db';
 import { articles } from '../db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and } from 'drizzle-orm';
 import { formatDate, formatViews, excerptFromContent } from '../lib/format';
 
 export const prerender = false;
@@ -13,7 +13,12 @@ try {
   trendingArticles = await db
     .select()
     .from(articles)
-    .where(eq(articles.published, true))
+    .where(
+      and(
+        eq(articles.published, true),
+        eq(articles.trending, true)
+      )
+    )
     .orderBy(desc(articles.views))
     .limit(30);
 } catch (e) {

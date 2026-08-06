@@ -32,7 +32,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
   try {
     const id = parseInt(params.id!, 10);
     const body = await request.json();
-    const { title, slug, content, category, coverImage, published } = body;
+    const { title, slug, content, category, coverImage, published, trending } = body;
 
     const [updated] = await db
       .update(articles)
@@ -43,6 +43,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
         category,
         coverImage: coverImage ?? null,
         published: published ?? false,
+        trending: trending ?? false,
         updatedAt: new Date(),
       })
       .where(eq(articles.id, id))
@@ -67,6 +68,47 @@ export const PUT: APIRoute = async ({ params, request }) => {
         headers: { 'Content-Type': 'application/json' },
       });
     }
+    return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+};
+
+export const PATCH: APIRoute = async ({ params, request }) => {
+  try {
+    const id = parseInt(params.id!, 10);
+    const body = await request.json();
+
+    const updateData: any = {};
+    if (body.title !== undefined) updateData.title = body.title;
+    if (body.slug !== undefined) updateData.slug = body.slug;
+    if (body.content !== undefined) updateData.content = body.content;
+    if (body.category !== undefined) updateData.category = body.category;
+    if (body.coverImage !== undefined) updateData.coverImage = body.coverImage;
+    if (body.published !== undefined) updateData.published = body.published;
+    if (body.trending !== undefined) updateData.trending = body.trending;
+    updateData.updatedAt = new Date();
+
+    const [updated] = await db
+      .update(articles)
+      .set(updateData)
+      .where(eq(articles.id, id))
+      .returning();
+
+    if (!updated) {
+      return new Response(JSON.stringify({ error: 'Article not found' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    return new Response(JSON.stringify({ success: true, article: updated }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (err) {
+    console.error('PATCH /api/admin/articles/[id] error:', err);
     return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },

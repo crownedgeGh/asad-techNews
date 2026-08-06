@@ -28,6 +28,7 @@ export const articles = pgTable('articles', {
   authorId: integer('author_id').references(() => users.id),
   category: text('category').notNull(),
   published: boolean('published').default(false).notNull(),
+  trending: boolean('trending').default(false).notNull(),
   views: integer('views').default(0).notNull(),
   likes: integer('likes').default(0).notNull(),
   commentsCount: integer('comments_count').default(0).notNull(),

@@ -24,6 +24,7 @@ export interface ArticleData {
   category: string;
   coverImage: string;
   published: boolean;
+  trending?: boolean;
 }
 
 interface ArticleFormProps {
@@ -56,6 +57,7 @@ function ArticleFormInner(props: ArticleFormProps) {
   const [category, setCategory] = useState(cachedArticle?.category ?? '');
   const [coverImage, setCoverImage] = useState(cachedArticle?.coverImage ?? '');
   const [published, setPublished] = useState(cachedArticle?.published ?? false);
+  const [trending, setTrending] = useState(cachedArticle?.trending ?? false);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [loadingArticle, setLoadingArticle] = useState(mode === 'edit' && !cachedArticle);
@@ -72,6 +74,7 @@ function ArticleFormInner(props: ArticleFormProps) {
       setCategory(article.category);
       setCoverImage(article.coverImage ?? '');
       setPublished(article.published);
+      setTrending(article.trending ?? false);
     };
 
     const loadFresh = (silent: boolean) =>
@@ -147,7 +150,7 @@ function ArticleFormInner(props: ArticleFormProps) {
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, slug, content, category, coverImage, published }),
+        body: JSON.stringify({ title, slug, content, category, coverImage, published, trending }),
       });
 
       if (!res.ok) {
@@ -223,8 +226,8 @@ function ArticleFormInner(props: ArticleFormProps) {
         </div>
       </div>
 
-      {/* Category + Published row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {/* Category + Published + Trending row */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="space-y-2">
           <Label htmlFor="article-category">Category *</Label>
           <Select value={category} onValueChange={setCategory}>
@@ -245,6 +248,13 @@ function ArticleFormInner(props: ArticleFormProps) {
           <div className="flex items-center gap-3 h-9">
             <Switch id="article-published" checked={published} onCheckedChange={setPublished} />
             <span className="text-sm text-base-content">{published ? 'Published' : 'Draft'}</span>
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="article-trending">Trending News</Label>
+          <div className="flex items-center gap-3 h-9">
+            <Switch id="article-trending" checked={trending} onCheckedChange={setTrending} />
+            <span className="text-sm text-base-content">{trending ? 'Trending' : 'Not Trending'}</span>
           </div>
         </div>
       </div>

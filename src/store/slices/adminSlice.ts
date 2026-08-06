@@ -6,6 +6,7 @@ export interface CachedArticle {
   slug: string;
   category: string;
   published: boolean;
+  trending: boolean;
   views: number;
   likes: number;
   commentsCount: number;
@@ -30,6 +31,7 @@ export interface ArticleDetailCacheEntry {
     category: string;
     coverImage: string;
     published: boolean;
+    trending: boolean;
   };
   fetchedAt: number;
 }

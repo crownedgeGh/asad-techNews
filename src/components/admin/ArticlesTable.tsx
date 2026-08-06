@@ -6,6 +6,7 @@ import { ConfirmModal } from './ConfirmModal';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
+import { Switch } from './ui/switch';
 import { Pagination } from './ui/pagination';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from './ui/select';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from './ui/dropdown-menu';
@@ -138,6 +139,31 @@ function ArticlesTableInner() {
     }
   };
 
+  const handleToggleTrending = async (article: Article, isTrending: boolean) => {
+    // Optimistic UI update
+    setArticles((prev) =>
+      prev.map((a) => (a.id === article.id ? { ...a, trending: isTrending } : a))
+    );
+
+    try {
+      const res = await fetch(`/api/admin/articles/${article.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trending: isTrending }),
+      });
+
+      if (!res.ok) throw new Error('Failed to update trending status');
+      toast.success(isTrending ? 'Article added to trending' : 'Article removed from trending');
+      dispatch(clearArticlesListCache());
+    } catch {
+      toast.error('Failed to update trending status');
+      // Rollback on failure
+      setArticles((prev) =>
+        prev.map((a) => (a.id === article.id ? { ...a, trending: !isTrending } : a))
+      );
+    }
+  };
+
   const canReorder = filter === 'all' && !searchQuery;
 
   const columns: Column<Article>[] = [
@@ -156,7 +182,12 @@ function ArticlesTableInner() {
             )}
           </div>
           <div className="min-w-0">
-            <p className="font-medium text-sm text-base-content line-clamp-1 max-w-xs">{a.title}</p>
+            <div className="flex items-center gap-2">
+              <p className="font-medium text-sm text-base-content line-clamp-1 max-w-xs">{a.title}</p>
+              {a.trending && (
+                <span className="badge badge-warning badge-xs shrink-0 font-bold text-[10px] uppercase">Trending</span>
+              )}
+            </div>
             <p className="text-xs text-base-content/60 mt-0.5 line-clamp-1 max-w-xs">
               {formatDateTime(a.createdAt)}
             </p>
@@ -197,6 +228,13 @@ function ArticlesTableInner() {
       header: 'Actions',
       render: (a, index) => (
         <div className="flex items-center gap-1 flex-wrap justify-end" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center gap-1.5 mr-2 bg-base-200/50 hover:bg-base-200 px-2 py-1 rounded-md transition-colors border border-base-300/40">
+            <span className="text-[11px] font-semibold text-base-content/60 uppercase">Trending</span>
+            <Switch
+              checked={a.trending}
+              onCheckedChange={(checked) => handleToggleTrending(a, checked)}
+            />
+          </div>
           <Button variant="ghost" size="xs" asChild>
             <a href={`/admin/articles/${a.id}/edit`}>
               <Pencil /> Edit
@@ -315,9 +353,14 @@ function ArticlesTableInner() {
 
               {/* Content */}
               <div className="flex flex-col flex-1 justify-center min-w-0 pr-6 sm:pr-0">
-                <h3 className="font-bold text-base sm:text-xl line-clamp-2 leading-tight mb-2 text-base-content">
-                  {a.title}
-                </h3>
+                <div className="flex items-start gap-2 flex-wrap mb-1">
+                  <h3 className="font-bold text-base sm:text-xl line-clamp-2 leading-tight text-base-content">
+                    {a.title}
+                  </h3>
+                  {a.trending && (
+                    <span className="badge badge-warning badge-xs shrink-0 font-bold text-[10px] uppercase mt-1">Trending</span>
+                  )}
+                </div>
                 <p className="text-xs sm:text-sm text-base-content/60 font-medium mb-2">
                   {dateStr} • {viewsStr} Views
                 </p>
@@ -339,6 +382,9 @@ function ArticlesTableInner() {
                       <a href={`/admin/articles/${a.id}/edit`}>
                         <Pencil /> Edit
                       </a>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleToggleTrending(a, !a.trending)}>
+                      <span>{a.trending ? '⭐ Remove Trending' : '⭐ Make Trending'}</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem destructive onClick={() => setDeleteTarget(a)}>
                       <Trash2 /> Delete
