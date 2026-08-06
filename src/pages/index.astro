@@ -3,8 +3,8 @@ import Layout from '../layouts/Layout.astro';
 import ArticleCard from '../components/ArticleCard.astro';
 import { db } from '../db';
 import { articles } from '../db/schema';
-import { eq, asc, desc } from 'drizzle-orm';
-import { formatDate, formatViews } from '../lib/format';
+import { eq, desc } from 'drizzle-orm';
+import { formatDateTime, formatViews } from '../lib/format';
 
 export const prerender = false;
 
@@ -14,7 +14,7 @@ try {
     .select()
     .from(articles)
     .where(eq(articles.published, true))
-    .orderBy(asc(articles.sortOrder), desc(articles.createdAt))
+    .orderBy(desc(articles.createdAt))
     .limit(30);
 } catch (e) {
   console.error('Failed to load articles for homepage:', e);
@@ -41,7 +41,7 @@ try {
                 imageUrl={article.coverImage || '/logo.png'}
                 category={article.category}
                 slug={article.slug}
-                date={formatDate(article.createdAt)}
+                date={formatDateTime(article.createdAt)}
                 views={formatViews(article.views)}
               />
             ))}
