@@ -2,17 +2,37 @@
 import AdminLayout from '../../../../layouts/AdminLayout.astro';
 import BackButton from '../../../../components/admin/BackButton.astro';
 import { db } from '../../../../db';
-import { articles } from '../../../../db/schema';
+import { articles, users } from '../../../../db/schema';
 import { eq } from 'drizzle-orm';
 import { injectLinkPreviews } from '../../../../lib/renderArticleContent';
+import { formatDate, estimateReadTime } from '../../../../lib/format';
 
 const { id } = Astro.params;
 const articleId = parseInt(id!, 10);
 
-let article: typeof import('../../../../db/schema').articles.$inferSelect | undefined;
+let article: (typeof import('../../../../db/schema').articles.$inferSelect & { authorName: string | null }) | undefined;
 try {
-  const rows = await db.select().from(articles).where(eq(articles.id, articleId));
-  article = rows[0];
+  const rows = await db
+    .select({
+      id: articles.id,
+      title: articles.title,
+      slug: articles.slug,
+      content: articles.content,
+      coverImage: articles.coverImage,
+      category: articles.category,
+      published: articles.published,
+      views: articles.views,
+      likes: articles.likes,
+      commentsCount: articles.commentsCount,
+      createdAt: articles.createdAt,
+      updatedAt: articles.updatedAt,
+      authorId: articles.authorId,
+      authorName: users.name,
+    })
+    .from(articles)
+    .leftJoin(users, eq(articles.authorId, users.id))
+    .where(eq(articles.id, articleId));
+  article = rows[0] as typeof article;
 } catch {
   return Astro.redirect('/admin/articles');
 }
@@ -28,11 +48,9 @@ try {
   console.error('Failed to inject link previews:', e);
 }
 
-function formatDate(date: Date) {
-  return new Date(date).toLocaleDateString('en-US', {
-    month: 'long', day: 'numeric', year: 'numeric'
-  });
-}
+const authorName = article.authorName ?? 'Staff Writer';
+const dateStr = formatDate(article.createdAt);
+const timeToRead = estimateReadTime(article.content);
 ---
 
 <AdminLayout title={`View: ${article.title}`}>
@@ -60,50 +78,58 @@ function formatDate(date: Date) {
       </div>
     </div>
 
-    <!-- Article preview card -->
-    <article class="bg-base-100 rounded-xl border border-base-300 shadow-sm overflow-hidden">
-      <!-- Status banner -->
-      {!article.published && (
-        <div class="bg-warning/10 border-b border-warning/30 px-6 py-2 flex items-center gap-2">
-          <span class="inline-flex items-center rounded-md bg-warning/10 text-warning px-2 py-0.5 text-xs font-medium">Draft</span>
-          <span class="text-sm text-base-content/60">This article is not yet published</span>
-        </div>
-      )}
-
-      <!-- Cover image -->
-      {article.coverImage && (
-        <div class="w-full aspect-video overflow-hidden">
-          <img
-            src={article.coverImage}
-            alt={article.title}
-            class="w-full h-full object-cover"
-          />
-        </div>
-      )}
-
-      <div class="px-6 py-8 lg:px-12 lg:py-10 max-w-4xl mx-auto">
-        <!-- Meta -->
-        <div class="flex items-center gap-3 mb-4 flex-wrap">
-          <span class="inline-flex items-center rounded-md border border-base-300 px-2 py-0.5 text-xs font-medium text-base-content">{article.category}</span>
-          <span class="text-sm text-base-content/60">{formatDate(article.createdAt)}</span>
-          <div class="flex items-center gap-4 text-sm text-base-content/60 ml-auto">
-            <span>{article.views.toLocaleString()} views</span>
-            <span>{article.likes.toLocaleString()} likes</span>
-            <span>{article.commentsCount.toLocaleString()} comments</span>
-          </div>
-        </div>
-
-        <!-- Title -->
-        <h1 class="text-3xl lg:text-4xl font-bold text-base-content mb-6 leading-tight">
-          {article.title}
-        </h1>
-
-        <!-- Content rendered same as public portal -->
-        <div
-          class="prose prose-slate dark:prose-invert max-w-none"
-          set:html={renderedContent}
-        />
+    {!article.published && (
+      <div class="rounded-lg bg-warning/10 border border-warning/30 px-4 py-2 flex items-center gap-2">
+        <span class="inline-flex items-center rounded-md bg-warning/10 text-warning px-2 py-0.5 text-xs font-medium">Draft</span>
+        <span class="text-sm text-base-content/60">This article is not yet published</span>
       </div>
-    </article>
+    )}
+
+    <!-- Real public-site-styled preview -->
+    <div class="rounded-xl border border-base-300 shadow-sm overflow-hidden bg-white dark:bg-[#121212] text-[#3B3B3B] dark:text-[#E2E8F0]">
+      <div class="article-content-font mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
+        <article>
+          <header class="mb-8">
+            <div class="mb-4 flex flex-wrap items-center gap-2">
+              <span class="text-sm font-bold uppercase tracking-wider text-[#00B2A9]">
+                {article.category || 'Uncategorized'}
+              </span>
+              <span class="text-sm text-slate-500 dark:text-slate-400">&bull;</span>
+              <time class="text-sm text-slate-500 dark:text-slate-400">{dateStr}</time>
+              <span class="text-sm text-slate-500 dark:text-slate-400">&bull;</span>
+              <span class="text-sm text-slate-500 dark:text-slate-400">{timeToRead}</span>
+            </div>
+            <h1 class="mb-6 text-2xl font-extrabold leading-tight text-slate-900 dark:text-white sm:text-3xl md:text-4xl lg:text-5xl">
+              {article.title || 'Untitled Article'}
+            </h1>
+            <div class="flex items-center gap-4">
+              <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xl font-bold text-slate-500 dark:bg-slate-700 dark:text-slate-400">
+                {authorName.charAt(0)}
+              </div>
+              <div>
+                <p class="font-medium text-slate-900 dark:text-white">{authorName}</p>
+                <p class="text-sm text-slate-500 dark:text-slate-400">{article.category || 'Uncategorized'}</p>
+              </div>
+            </div>
+          </header>
+
+          {article.coverImage ? (
+            <div class="mb-10 aspect-video overflow-hidden rounded-2xl bg-slate-100 shadow-lg dark:bg-slate-800">
+              <img src={article.coverImage} alt={article.title} class="h-full w-full object-cover" />
+            </div>
+          ) : (
+            <div class="mb-10 flex aspect-video items-center justify-center rounded-2xl bg-slate-100 text-slate-400 shadow-lg dark:bg-slate-800 dark:text-slate-500">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3 3l18 18M3.75 3h16.5a.75.75 0 01.75.75v16.5a.75.75 0 01-.75.75H3.75a.75.75 0 01-.75-.75V3.75a.75.75 0 01.75-.75z" />
+              </svg>
+            </div>
+          )}
+
+          <div class="prose prose-lg max-w-none prose-a:text-[#00B2A9] hover:prose-a:text-[#099e96] dark:prose-invert">
+            <div set:html={renderedContent} />
+          </div>
+        </article>
+      </div>
+    </div>
   </div>
 </AdminLayout>

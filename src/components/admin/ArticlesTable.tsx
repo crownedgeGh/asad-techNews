@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
-import { Eye, Pencil, Trash2, MoreVertical, ArrowUp, ArrowDown, Search, ImageOff, Trash, RefreshCw } from 'lucide-react';
+import { Pencil, Trash2, MoreVertical, ArrowUp, ArrowDown, Search, ImageOff, Trash, RefreshCw } from 'lucide-react';
 import { AdminTable, type Column } from './AdminTable';
 import { ConfirmModal } from './ConfirmModal';
 import { Input } from './ui/input';
@@ -198,11 +198,6 @@ function ArticlesTableInner() {
       render: (a, index) => (
         <div className="flex items-center gap-1 flex-wrap justify-end" onClick={(e) => e.stopPropagation()}>
           <Button variant="ghost" size="xs" asChild>
-            <a href={`/admin/articles/${a.id}`}>
-              <Eye /> View
-            </a>
-          </Button>
-          <Button variant="ghost" size="xs" asChild>
             <a href={`/admin/articles/${a.id}/edit`}>
               <Pencil /> Edit
             </a>
@@ -294,7 +289,7 @@ function ArticlesTableInner() {
         loading={loading}
         emptyMessage="No articles found."
         onRowClick={(a) => {
-          window.location.href = `/admin/articles/${a.id}/edit`;
+          window.location.href = `/admin/articles/${a.id}`;
         }}
         renderMobileCard={(a, index) => {
           const dateStr = formatDateTime(a.createdAt);
@@ -304,7 +299,7 @@ function ArticlesTableInner() {
             <div
               className="flex gap-4 py-4 border-b border-base-300 last:border-0 relative bg-base-100 rounded-none sm:rounded-xl sm:border sm:border-base-300 sm:p-4 sm:mb-4 sm:last:mb-0 cursor-pointer"
               onClick={() => {
-                window.location.href = `/admin/articles/${a.id}/edit`;
+                window.location.href = `/admin/articles/${a.id}`;
               }}
             >
               {/* Cover Image */}
@@ -340,11 +335,6 @@ function ArticlesTableInner() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem asChild>
-                      <a href={`/admin/articles/${a.id}`}>
-                        <Eye /> View
-                      </a>
-                    </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <a href={`/admin/articles/${a.id}/edit`}>
                         <Pencil /> Edit
