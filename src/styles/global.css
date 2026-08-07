@@ -33,3 +33,29 @@
   background-color: var(--color-background-dark);
   color: var(--color-text-dark);
 }
+
+.featured-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.featured-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.featured-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.featured-scroll::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 9999px;
+}
+
+.dark .featured-scroll {
+  scrollbar-color: #475569 transparent;
+}
+
+.dark .featured-scroll::-webkit-scrollbar-thumb {
+  background-color: #475569;
+}
