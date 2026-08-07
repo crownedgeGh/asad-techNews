@@ -30,7 +30,7 @@ export const GET: APIRoute = async ({ url }) => {
         ? [desc(articles.views)]
         : filter === 'most_liked'
         ? [desc(articles.likes)]
-        : [asc(articles.sortOrder), desc(articles.createdAt)];
+        : [sql`(${articles.sortOrder} = 0)`, asc(articles.sortOrder), desc(articles.createdAt)];
 
     const [rows, [{ count }]] = await Promise.all([
       db
@@ -85,11 +85,8 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    // Assign sortOrder as max + 1
-    const [{ maxOrder }] = await db
-      .select({ maxOrder: sql<number>`coalesce(max(sort_order), 0)` })
-      .from(articles);
-
+    // sortOrder defaults to 0 (unranked), so new articles fall back to date/time ordering
+    // on the public portal until an admin explicitly pins them to a position.
     const [created] = await db
       .insert(articles)
       .values({
@@ -102,7 +99,6 @@ export const POST: APIRoute = async ({ request }) => {
         trending: trending ?? false,
         featured: featured ?? false,
         credit: credit ?? null,
-        sortOrder: (maxOrder ?? 0) + 1,
       })
       .returning();
 

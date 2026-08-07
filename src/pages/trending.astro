@@ -3,7 +3,7 @@ import Layout from '../layouts/Layout.astro';
 import ArticleCard from '../components/ArticleCard.astro';
 import { db } from '../db';
 import { articles } from '../db/schema';
-import { eq, desc, and } from 'drizzle-orm';
+import { eq, asc, desc, and, sql } from 'drizzle-orm';
 import { formatDate, formatViews, excerptFromContent } from '../lib/format';
 
 export const prerender = false;
@@ -19,7 +19,7 @@ try {
         eq(articles.trending, true)
       )
     )
-    .orderBy(desc(articles.views))
+    .orderBy(sql`(${articles.sortOrder} = 0)`, asc(articles.sortOrder), desc(articles.createdAt))
     .limit(30);
 } catch (e) {
   console.error('Failed to load trending articles:', e);

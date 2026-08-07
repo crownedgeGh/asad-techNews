@@ -3,7 +3,7 @@ import Layout from '../layouts/Layout.astro';
 import ArticleCard from '../components/ArticleCard.astro';
 import { db } from '../db';
 import { articles } from '../db/schema';
-import { eq, desc, and } from 'drizzle-orm';
+import { eq, asc, desc, and, sql } from 'drizzle-orm';
 import { formatDateTime, formatDate, formatViews } from '../lib/format';
 
 export const prerender = false;
@@ -14,7 +14,7 @@ try {
     .select()
     .from(articles)
     .where(eq(articles.published, true))
-    .orderBy(desc(articles.createdAt))
+    .orderBy(sql`(${articles.sortOrder} = 0)`, asc(articles.sortOrder), desc(articles.createdAt))
     .limit(30);
 } catch (e) {
   console.error('Failed to load articles for homepage:', e);

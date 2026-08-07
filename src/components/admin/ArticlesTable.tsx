@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
-import { Pencil, Trash2, MoreVertical, ArrowUp, ArrowDown, Search, ImageOff, Trash, RefreshCw } from 'lucide-react';
+import { Pencil, Trash2, MoreVertical, ListOrdered, Search, ImageOff, Trash, RefreshCw } from 'lucide-react';
 import { AdminTable, type Column } from './AdminTable';
 import { ConfirmModal } from './ConfirmModal';
 import { Input } from './ui/input';
@@ -9,7 +9,7 @@ import { Badge } from './ui/badge';
 import { Switch } from './ui/switch';
 import { Pagination } from './ui/pagination';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from './ui/select';
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from './ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuCheckboxItem } from './ui/dropdown-menu';
 import { AdminStoreProvider } from '../../store/AdminStoreProvider';
 import { useAppDispatch, useAppSelector } from '../../store';
 import { setArticlesFilters, setArticlesListCache, clearArticlesListCache, type CachedArticle } from '../../store/slices/adminSlice';
@@ -30,6 +30,35 @@ const FRESH_MS = 30_000;
 
 function cacheKey(page: number, filter: string, searchQuery: string) {
   return `${filter}|${page}|${searchQuery.trim()}`;
+}
+
+const MAX_POSITION = 15;
+
+function PositionSelect({
+  article,
+  onChange,
+}: {
+  article: Article;
+  onChange: (position: number) => void;
+}) {
+  return (
+    <Select
+      value={String(article.sortOrder)}
+      onValueChange={(v) => onChange(Number(v))}
+    >
+      <SelectTrigger className="h-8 w-28 text-xs" title="Set trend position">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="0">Auto (date)</SelectItem>
+        {Array.from({ length: MAX_POSITION }, (_, i) => i + 1).map((p) => (
+          <SelectItem key={p} value={String(p)}>
+            Position {p}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
 }
 
 function ArticlesTableInner() {
@@ -124,14 +153,15 @@ function ArticlesTableInner() {
     }
   };
 
-  const handleReorder = async (article: Article, direction: 'up' | 'down') => {
+  const handleReorder = async (article: Article, position: number) => {
     try {
       const res = await fetch(`/api/admin/articles/${article.id}/reorder`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ direction }),
+        body: JSON.stringify({ position }),
       });
       if (!res.ok) throw new Error('Failed to reorder article');
+      toast.success(position === 0 ? 'Article set to auto (date) order' : `Article moved to position ${position}`);
       dispatch(clearArticlesListCache());
       await fetchArticles(page, filter, searchQuery, { silent: true });
     } catch {
@@ -255,7 +285,7 @@ function ArticlesTableInner() {
     {
       key: 'actions',
       header: 'Actions',
-      render: (a, index) => (
+      render: (a) => (
         <div className="flex items-center gap-1 flex-wrap justify-end" onClick={(e) => e.stopPropagation()}>
           <div className="flex flex-col gap-1 mr-2 bg-base-200/50 px-2 py-1 rounded-md border border-base-300/40">
             <div className="flex items-center justify-between gap-2">
@@ -284,24 +314,7 @@ function ArticlesTableInner() {
             <Trash2 /> Delete
           </Button>
           {canReorder && (
-            <div className="flex flex-col gap-0.5 ml-1">
-              <button
-                onClick={() => handleReorder(a, 'up')}
-                disabled={index === 0}
-                className="text-base-content/60 hover:text-base-content disabled:opacity-30 disabled:pointer-events-none"
-                title="Move up"
-              >
-                <ArrowUp className="h-3.5 w-3.5" />
-              </button>
-              <button
-                onClick={() => handleReorder(a, 'down')}
-                disabled={index === articles.length - 1}
-                className="text-base-content/60 hover:text-base-content disabled:opacity-30 disabled:pointer-events-none"
-                title="Move down"
-              >
-                <ArrowDown className="h-3.5 w-3.5" />
-              </button>
-            </div>
+            <PositionSelect article={a} onChange={(position) => handleReorder(a, position)} />
           )}
         </div>
       ),
@@ -369,7 +382,7 @@ function ArticlesTableInner() {
         onRowClick={(a) => {
           window.location.href = `/admin/articles/${a.id}`;
         }}
-        renderMobileCard={(a, index) => {
+        renderMobileCard={(a) => {
           const dateStr = formatDateTime(a.createdAt);
           const viewsStr = a.views >= 1000 ? (a.views / 1000).toFixed(1) + 'K' : a.views;
 
@@ -420,7 +433,7 @@ function ArticlesTableInner() {
                       <MoreVertical className="text-base-content/60" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
+                  <DropdownMenuContent align="end" className={canReorder ? 'max-h-72 overflow-y-auto' : undefined}>
                     <DropdownMenuItem asChild>
                       <a href={`/admin/articles/${a.id}/edit`}>
                         <Pencil /> Edit
@@ -438,15 +451,21 @@ function ArticlesTableInner() {
                     {canReorder && (
                       <>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem disabled={index === 0} onClick={() => handleReorder(a, 'up')}>
-                          <ArrowUp /> Move Up
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          disabled={index === articles.length - 1}
-                          onClick={() => handleReorder(a, 'down')}
+                        <DropdownMenuCheckboxItem
+                          checked={a.sortOrder === 0}
+                          onSelect={() => handleReorder(a, 0)}
                         >
-                          <ArrowDown /> Move Down
-                        </DropdownMenuItem>
+                          <ListOrdered className="h-3.5 w-3.5" /> Auto (by date)
+                        </DropdownMenuCheckboxItem>
+                        {Array.from({ length: MAX_POSITION }, (_, i) => i + 1).map((p) => (
+                          <DropdownMenuCheckboxItem
+                            key={p}
+                            checked={a.sortOrder === p}
+                            onSelect={() => handleReorder(a, p)}
+                          >
+                            Position {p}
+                          </DropdownMenuCheckboxItem>
+                        ))}
                       </>
                     )}
                   </DropdownMenuContent>

@@ -1,14 +1,22 @@
 import type { APIRoute } from 'astro';
 import { db } from '../../../../../db';
 import { articles } from '../../../../../db/schema';
-import { eq, gt, lt, asc } from 'drizzle-orm';
+import { eq, ne, asc } from 'drizzle-orm';
+
+const MAX_POSITION = 15;
 
 export const POST: APIRoute = async ({ params, request }) => {
   try {
     const id = parseInt(params.id!, 10);
-    const { direction } = await request.json() as { direction: 'up' | 'down' };
+    const { position } = await request.json() as { position: number };
 
-    // Get the current article
+    if (!Number.isInteger(position) || position < 0 || position > MAX_POSITION) {
+      return new Response(JSON.stringify({ error: 'position must be between 0 and 15' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     const [current] = await db.select().from(articles).where(eq(articles.id, id));
     if (!current) {
       return new Response(JSON.stringify({ error: 'Article not found' }), {
@@ -17,46 +25,29 @@ export const POST: APIRoute = async ({ params, request }) => {
       });
     }
 
-    let neighbor: typeof current | undefined;
+    // Ranked (pinned) articles, excluding the one being moved, in their current order.
+    const ranked = await db
+      .select()
+      .from(articles)
+      .where(ne(articles.sortOrder, 0))
+      .orderBy(asc(articles.sortOrder));
+    const others = ranked.filter((a) => a.id !== id);
 
-    if (direction === 'up') {
-      // Find article with next lower sortOrder
-      const results = await db
-        .select()
-        .from(articles)
-        .where(lt(articles.sortOrder, current.sortOrder))
-        .orderBy(asc(articles.sortOrder))
-        .limit(1);
-      neighbor = results[results.length - 1];
+    if (position === 0) {
+      // Unpin: falls back to date/time ordering.
+      await db.update(articles).set({ sortOrder: 0 }).where(eq(articles.id, id));
     } else {
-      // Find article with next higher sortOrder
-      const results = await db
-        .select()
-        .from(articles)
-        .where(gt(articles.sortOrder, current.sortOrder))
-        .orderBy(asc(articles.sortOrder))
-        .limit(1);
-      neighbor = results[0];
-    }
+      const insertAt = Math.min(position - 1, others.length);
+      others.splice(insertAt, 0, current);
 
-    if (!neighbor) {
-      return new Response(
-        JSON.stringify({ success: true, message: 'Already at boundary' }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      await Promise.all(
+        others.map((a, i) =>
+          a.sortOrder === i + 1
+            ? Promise.resolve()
+            : db.update(articles).set({ sortOrder: i + 1 }).where(eq(articles.id, a.id))
+        )
       );
     }
-
-    // Swap sort orders
-    await Promise.all([
-      db
-        .update(articles)
-        .set({ sortOrder: neighbor.sortOrder })
-        .where(eq(articles.id, current.id)),
-      db
-        .update(articles)
-        .set({ sortOrder: current.sortOrder })
-        .where(eq(articles.id, neighbor.id)),
-    ]);
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,

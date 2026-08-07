@@ -3,7 +3,7 @@ import Layout from '../layouts/Layout.astro';
 import ArticleCard from '../components/ArticleCard.astro';
 import { db } from '../db';
 import { articles } from '../db/schema';
-import { and, eq, asc, desc } from 'drizzle-orm';
+import { and, eq, asc, desc, sql } from 'drizzle-orm';
 import { formatDate, formatViews, excerptFromContent } from '../lib/format';
 
 export const prerender = false;
@@ -14,7 +14,7 @@ try {
     .select()
     .from(articles)
     .where(and(eq(articles.published, true), eq(articles.category, 'Reviews')))
-    .orderBy(asc(articles.sortOrder), desc(articles.createdAt))
+    .orderBy(sql`(${articles.sortOrder} = 0)`, asc(articles.sortOrder), desc(articles.createdAt))
     .limit(30);
 } catch (e) {
   console.error('Failed to load Reviews articles:', e);
