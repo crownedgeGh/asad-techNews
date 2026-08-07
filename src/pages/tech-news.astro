@@ -1,10 +1,17 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import ArticleCard from '../components/ArticleCard.astro';
+import FeaturedSidebar from '../components/FeaturedSidebar.astro';
 import { db } from '../db';
 import { articles } from '../db/schema';
 import { and, eq, asc, desc, sql } from 'drizzle-orm';
 import { formatDate, formatViews, excerptFromContent } from '../lib/format';
+import { SITE_URL, LISTING_SEO } from '../lib/seo';
+import { collectionPageSchema, breadcrumbSchema } from '../lib/schema';
+import Breadcrumbs from '../components/seo/Breadcrumbs.astro';
+
+const meta = LISTING_SEO['/tech-news'];
+const crumbs = [{ name: 'Home', url: '/' }, { name: meta.title, url: '/tech-news' }];
 
 export const prerender = false;
 
@@ -19,28 +26,44 @@ try {
 } catch (e) {
   console.error('Failed to load Tech News articles:', e);
 }
+
+const jsonLd = [
+  collectionPageSchema({
+    name: meta.title,
+    description: meta.description,
+    url: `${SITE_URL}/tech-news`,
+    items: categoryArticles.map((a) => ({ title: a.title, url: `/article/${a.slug}` })),
+  }),
+  breadcrumbSchema(crumbs),
+];
 ---
 
-<Layout title="Tech News">
+<Layout title={meta.title} description={meta.description} jsonLd={jsonLd}>
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <Breadcrumbs items={crumbs} class="mb-6" />
     <h1 class="text-3xl font-heading font-bold text-slate-900 dark:text-white mb-8 uppercase border-b border-slate-300 dark:border-slate-800 pb-3">
       Tech <span class="text-primary font-light">News</span>
     </h1>
-    <div class="flex flex-col max-w-4xl">
-      {categoryArticles.length === 0 && (
-        <p class="text-slate-500 dark:text-slate-400 py-12 text-center">No articles in this category yet.</p>
-      )}
-      {categoryArticles.map(article => (
-        <ArticleCard
-          title={article.title}
-          excerpt={excerptFromContent(article.content)}
-          imageUrl={article.coverImage || '/logo.png'}
-          category={article.category}
-          slug={article.slug}
-          date={formatDate(article.createdAt)}
-          views={formatViews(article.views)}
-        />
-      ))}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-12">
+      <div class="lg:col-span-2 flex flex-col">
+        {categoryArticles.length === 0 && (
+          <p class="text-slate-500 dark:text-slate-400 py-12 text-center">No articles in this category yet.</p>
+        )}
+        {categoryArticles.map(article => (
+          <ArticleCard
+            title={article.title}
+            excerpt={excerptFromContent(article.content)}
+            imageUrl={article.coverImage || '/logo.png'}
+            category={article.category}
+            slug={article.slug}
+            date={formatDate(article.createdAt)}
+            views={formatViews(article.views)}
+          />
+        ))}
+      </div>
+      <aside class="lg:col-span-1">
+        <FeaturedSidebar />
+      </aside>
     </div>
   </div>
 </Layout>

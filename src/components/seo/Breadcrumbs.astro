@@ -1,0 +1,33 @@
+---
+/**
+ * Accessible visual breadcrumb trail. Pair with breadcrumbSchema() for JSON-LD.
+ * Minimal by design — a single thin row, no clutter.
+ */
+import type { BreadcrumbItem } from '../../lib/schema';
+
+interface Props {
+  items: BreadcrumbItem[];
+  class?: string;
+}
+
+const { items, class: className = '' } = Astro.props;
+---
+
+<nav aria-label="Breadcrumb" class={`text-sm ${className}`}>
+  <ol class="flex flex-wrap items-center gap-1.5 text-slate-500 dark:text-slate-400">
+    {items.map((item, i) => (
+      <li class="flex items-center gap-1.5">
+        {i < items.length - 1 ? (
+          <a href={item.url} class="hover:text-primary dark:hover:text-primary transition-colors">
+            {item.name}
+          </a>
+        ) : (
+          <span aria-current="page" class="text-slate-700 dark:text-slate-300 font-medium line-clamp-1">
+            {item.name}
+          </span>
+        )}
+        {i < items.length - 1 && <span aria-hidden="true" class="text-slate-300 dark:text-slate-600">/</span>}
+      </li>
+    ))}
+  </ol>
+</nav>

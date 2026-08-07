@@ -1,0 +1,22 @@
+---
+/**
+ * Renders one or more schema.org JSON-LD blocks safely.
+ *
+ * Pass a single schema object or an array. `<` is escaped to `<` to
+ * prevent the JSON payload from breaking out of the <script> element (XSS-safe).
+ */
+interface Props {
+  schema: Record<string, any> | Record<string, any>[];
+}
+
+const { schema } = Astro.props;
+const blocks = Array.isArray(schema) ? schema : [schema];
+
+function serialize(obj: Record<string, any>): string {
+  return JSON.stringify(obj).replace(/</g, '\\u003c');
+}
+---
+
+{blocks.filter(Boolean).map((block) => (
+  <script type="application/ld+json" set:html={serialize(block)} />
+))}

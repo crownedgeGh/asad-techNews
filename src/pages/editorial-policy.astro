@@ -1,0 +1,48 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Breadcrumbs from '../components/seo/Breadcrumbs.astro';
+import { breadcrumbSchema } from '../lib/schema';
+import { SITE } from '../lib/seo';
+
+const crumbs = [{ name: 'Home', url: '/' }, { name: 'Editorial Policy', url: '/editorial-policy' }];
+const jsonLd = breadcrumbSchema(crumbs);
+const description = `The editorial standards behind ${SITE.name} — how we source, verify, correct, and disclose across our technology coverage.`;
+---
+
+<Layout title="Editorial Policy" description={description} jsonLd={jsonLd}>
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <Breadcrumbs items={crumbs} class="mb-6" />
+    <article class="prose prose-lg dark:prose-invert prose-headings:font-heading max-w-none font-body">
+      <h1>Editorial Policy</h1>
+      <p>
+        {SITE.name} is committed to accurate, independent, and transparent technology journalism. This
+        page outlines the standards our writers and editors follow.
+      </p>
+      <h2>Accuracy &amp; verification</h2>
+      <p>
+        We verify claims against primary sources wherever possible and clearly attribute information to
+        its origin. When a story is developing, we label it as such and update it as facts emerge.
+      </p>
+      <h2>Corrections</h2>
+      <p>
+        Mistakes are corrected promptly and transparently. If you believe we've published an error,
+        please <a href="/contact">contact us</a> with the details and we will review it.
+      </p>
+      <h2>Independence &amp; disclosure</h2>
+      <p>
+        Our editorial coverage is independent of commercial relationships. Where an article involves
+        affiliate links, sponsorship, or a product loan, we disclose it clearly within the piece.
+      </p>
+      <h2>Sourcing &amp; attribution</h2>
+      <p>
+        We credit original reporting and only republish third-party material with appropriate
+        attribution. Any external credit is noted on the article itself.
+      </p>
+      <h2>AI use</h2>
+      <p>
+        Editorial judgement is always human. Where tools assist with research or drafting, a member of
+        our team reviews and takes responsibility for the published result.
+      </p>
+    </article>
+  </div>
+</Layout>

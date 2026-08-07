@@ -1,0 +1,39 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Breadcrumbs from '../components/seo/Breadcrumbs.astro';
+import { breadcrumbSchema } from '../lib/schema';
+import { SITE } from '../lib/seo';
+
+const crumbs = [{ name: 'Home', url: '/' }, { name: 'Contact', url: '/contact' }];
+const jsonLd = breadcrumbSchema(crumbs);
+const description = `Contact ${SITE.name} — send news tips, corrections, feedback, or partnership enquiries to our editorial team.`;
+// TODO: replace with the real published contact address before launch.
+const contactEmail = 'hello@thelumentech.com';
+---
+
+<Layout title="Contact" description={description} jsonLd={jsonLd}>
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <Breadcrumbs items={crumbs} class="mb-6" />
+    <article class="prose prose-lg dark:prose-invert prose-headings:font-heading max-w-none font-body">
+      <h1>Contact Us</h1>
+      <p>
+        We'd love to hear from you. Whether you have a news tip, a correction, feedback on a story, or a
+        partnership enquiry, the fastest way to reach the {SITE.name} team is by email.
+      </p>
+      <h2>Email</h2>
+      <p>
+        <a href={`mailto:${contactEmail}`}>{contactEmail}</a>
+      </p>
+      <h2>News tips &amp; corrections</h2>
+      <p>
+        Spotted something we got wrong? We take accuracy seriously and correct errors promptly — please
+        include the article link and the correction. Learn more in our
+        <a href="/editorial-policy">Editorial Policy</a>.
+      </p>
+      <h2>Follow us</h2>
+      <p>
+        Stay up to date with the latest stories via our <a href="/rss.xml">RSS feed</a>.
+      </p>
+    </article>
+  </div>
+</Layout>

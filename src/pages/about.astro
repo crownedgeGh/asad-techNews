@@ -1,0 +1,42 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Breadcrumbs from '../components/seo/Breadcrumbs.astro';
+import { breadcrumbSchema } from '../lib/schema';
+import { SITE } from '../lib/seo';
+
+const crumbs = [{ name: 'Home', url: '/' }, { name: 'About', url: '/about' }];
+const jsonLd = breadcrumbSchema(crumbs);
+const description = `About ${SITE.name} — who we are, what we cover, and our commitment to fast, trustworthy, independent technology journalism.`;
+---
+
+<Layout title="About" description={description} jsonLd={jsonLd}>
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <Breadcrumbs items={crumbs} class="mb-6" />
+    <article class="prose prose-lg dark:prose-invert prose-headings:font-heading max-w-none font-body">
+      <h1>About The Lumen Tech</h1>
+      <p>
+        {SITE.name} is an independent technology publication covering the news, products, and ideas
+        shaping the future of tech. We report on artificial intelligence, consumer gadgets, and the
+        companies driving the industry forward — clearly, quickly, and without the clutter.
+      </p>
+      <h2>What we cover</h2>
+      <p>
+        Our newsroom is organized around a few focused beats: breaking <a href="/tech-news">Tech News</a>,
+        <a href="/new-products">New Products</a>, hands-on <a href="/reviews">Reviews</a>, and broader
+        <a href="/general">General News</a>. You can always find what readers are reading most on our
+        <a href="/trending">Trending</a> page.
+      </p>
+      <h2>Our approach</h2>
+      <p>
+        We value speed, accuracy, and reader trust above all. Every story is written to be genuinely
+        useful — no filler, no dark patterns, no manufactured outrage. Read more about our standards in
+        our <a href="/editorial-policy">Editorial Policy</a>.
+      </p>
+      <h2>Get in touch</h2>
+      <p>
+        Have a tip, correction, or partnership idea? Visit our <a href="/contact">Contact</a> page.
+        You can also follow our latest stories via <a href="/rss.xml">RSS</a>.
+      </p>
+    </article>
+  </div>
+</Layout>

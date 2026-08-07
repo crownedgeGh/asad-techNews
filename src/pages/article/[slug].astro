@@ -3,11 +3,14 @@ import Layout from '../../layouts/Layout.astro';
 import SocialShare from '../../components/SocialShare';
 import Comments from '../../components/Comments';
 import RelatedArticles from '../../components/RelatedArticles.astro';
+import Breadcrumbs from '../../components/seo/Breadcrumbs.astro';
 import { db } from '../../db';
 import { articles, users } from '../../db/schema';
 import { eq, sql, and, desc } from 'drizzle-orm';
-import { formatDate, estimateReadTime } from '../../lib/format';
+import { formatDate, estimateReadTime, excerptFromContent, stripHtml } from '../../lib/format';
 import { injectLinkPreviews } from '../../lib/renderArticleContent';
+import { articleUrl, categoryPath, extractTopics, absoluteUrl } from '../../lib/seo';
+import { articleSchema, breadcrumbSchema } from '../../lib/schema';
 
 export const prerender = false;
 
@@ -26,6 +29,7 @@ const rows = await db
     likes: articles.likes,
     commentsCount: articles.commentsCount,
     createdAt: articles.createdAt,
+    updatedAt: articles.updatedAt,
     authorName: users.name,
     credit: articles.credit,
   })
@@ -45,12 +49,44 @@ db.update(articles)
   .where(eq(articles.id, article.id))
   .catch((e) => console.error('Failed to increment views:', e));
 
-const currentUrl = Astro.url.href;
+const canonicalUrl = articleUrl(article.slug);
+const currentUrl = canonicalUrl;
 const authorName = article.authorName ?? 'Staff Writer';
 const displayName = article.credit ? `Credit: ${article.credit}` : authorName;
 const dateStr = formatDate(article.createdAt);
 const timeToRead = estimateReadTime(article.content);
 const coverImage = article.coverImage || '/logo.png';
+
+// --- SEO / structured data -------------------------------------------------
+const metaDescription = excerptFromContent(article.content, 160);
+const keywords = extractTopics(article.title, article.category);
+const publishedIso = new Date(article.createdAt).toISOString();
+const modifiedIso = new Date(article.updatedAt ?? article.createdAt).toISOString();
+const wordCount = stripHtml(article.content).split(' ').filter(Boolean).length;
+const isReview = article.category === 'Reviews';
+
+const breadcrumbItems = [
+  { name: 'Home', url: '/' },
+  { name: article.category, url: categoryPath(article.category) },
+  { name: article.title, url: `/article/${article.slug}` },
+];
+
+const jsonLd = [
+  articleSchema({
+    headline: article.title,
+    description: metaDescription,
+    url: canonicalUrl,
+    image: coverImage,
+    datePublished: publishedIso,
+    dateModified: modifiedIso,
+    authorName: article.credit || authorName,
+    section: article.category,
+    keywords,
+    wordCount,
+    type: isReview ? 'Review' : 'NewsArticle',
+  }),
+  breadcrumbSchema(breadcrumbItems),
+];
 
 let renderedContent = article.content;
 try {
@@ -73,8 +109,22 @@ try {
 }
 ---
 
-<Layout title={article.title}>
+<Layout
+  title={article.title}
+  description={metaDescription}
+  canonical={canonicalUrl}
+  image={absoluteUrl(coverImage)}
+  imageAlt={article.title}
+  type="article"
+  keywords={keywords}
+  publishedTime={publishedIso}
+  modifiedTime={modifiedIso}
+  author={article.credit || authorName}
+  section={article.category}
+  jsonLd={jsonLd}
+>
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <Breadcrumbs items={breadcrumbItems} class="mb-8" />
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-12">
 
       {/* Main Article Content (Left 2 cols) */}
@@ -84,7 +134,7 @@ try {
           <div class="flex items-center gap-2 mb-4">
             <span class="text-sm font-bold uppercase tracking-wider text-primary dark:text-primary">{article.category}</span>
             <span class="text-sm text-slate-500 dark:text-slate-400">&bull;</span>
-            <time class="text-sm text-slate-500 dark:text-slate-400">{dateStr}</time>
+            <time datetime={publishedIso} class="text-sm text-slate-500 dark:text-slate-400">{dateStr}</time>
             <span class="text-sm text-slate-500 dark:text-slate-400">&bull;</span>
             <span class="text-sm text-slate-500 dark:text-slate-400">{timeToRead}</span>
           </div>
@@ -102,9 +152,18 @@ try {
         {/* Social Share */}
         <SocialShare client:load url={currentUrl} title={article.title} />
 
-        {/* Cover Image */}
+        {/* Cover Image (LCP — eager + high priority) */}
         <div class="mb-10 rounded-2xl overflow-hidden shadow-lg aspect-video">
-          <img src={coverImage} alt={article.title} class="w-full h-full object-cover" />
+          <img
+            src={coverImage}
+            alt={article.title}
+            width="1280"
+            height="720"
+            loading="eager"
+            fetchpriority="high"
+            decoding="async"
+            class="w-full h-full object-cover"
+          />
         </div>
 
         {/* Article Body */}
@@ -166,7 +225,10 @@ try {
                       <img
                         src={f.coverImage || '/logo.png'}
                         alt={f.title}
+                        width="320"
+                        height="180"
                         loading="lazy"
+                        decoding="async"
                         class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                       />
                     </div>

@@ -1,0 +1,44 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Breadcrumbs from '../components/seo/Breadcrumbs.astro';
+import { breadcrumbSchema } from '../lib/schema';
+import { SITE } from '../lib/seo';
+
+const crumbs = [{ name: 'Home', url: '/' }, { name: 'Terms of Service', url: '/terms' }];
+const jsonLd = breadcrumbSchema(crumbs);
+const description = `Terms of Service for ${SITE.name} — the rules and conditions for using our website and content.`;
+---
+
+<Layout title="Terms of Service" description={description} jsonLd={jsonLd}>
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <Breadcrumbs items={crumbs} class="mb-6" />
+    <article class="prose prose-lg dark:prose-invert prose-headings:font-heading max-w-none font-body">
+      <h1>Terms of Service</h1>
+      <p>
+        By accessing {SITE.name}, you agree to these Terms of Service. If you do not agree, please do not
+        use the site.
+      </p>
+      <h2>Use of content</h2>
+      <p>
+        All articles, images, and branding on this site are the property of {SITE.name} or their
+        respective owners and are protected by copyright. You may share links freely, but you may not
+        republish our content in full without permission.
+      </p>
+      <h2>Acceptable use</h2>
+      <p>
+        You agree not to misuse the site, attempt to disrupt its operation, or use automated systems to
+        access it in a way that harms performance or violates applicable law.
+      </p>
+      <h2>Disclaimer</h2>
+      <p>
+        Content is provided for general information only and is not professional advice. We make no
+        warranties as to accuracy or completeness and are not liable for decisions made based on it.
+      </p>
+      <h2>Changes</h2>
+      <p>
+        We may revise these terms at any time. Continued use of the site indicates acceptance of the
+        current terms.
+      </p>
+    </article>
+  </div>
+</Layout>

@@ -18,8 +18,11 @@ const { title, excerpt, imageUrl, category, slug, date, author = "Tech Editor", 
     <img
       src={imageUrl}
       alt={title}
+      width="480"
+      height="300"
       class="w-full aspect-[16/10] object-cover object-center group-hover:scale-105 transition-transform duration-500"
       loading="lazy"
+      decoding="async"
     />
   </a>
   <div class="flex flex-col justify-start w-full sm:w-2/3 md:w-3/4 pt-1">

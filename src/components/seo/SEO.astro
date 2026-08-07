@@ -1,0 +1,81 @@
+---
+/**
+ * Reusable SEO head component.
+ *
+ * Emits: title, meta description, canonical, robots, keywords, full OpenGraph
+ * (article-aware), and Twitter Card tags. Absolute URLs are resolved via the
+ * central SITE config so OG/Twitter images always work when scraped.
+ */
+import { SITE, absoluteUrl, canonicalFromUrl, pageTitle, clampDescription } from '../../lib/seo';
+
+interface Props {
+  title?: string;
+  description?: string;
+  canonical?: string;
+  image?: string;
+  imageAlt?: string;
+  type?: 'website' | 'article';
+  noindex?: boolean;
+  keywords?: string[];
+  publishedTime?: string;
+  modifiedTime?: string;
+  author?: string;
+  section?: string;
+}
+
+const {
+  title,
+  description,
+  canonical,
+  image,
+  imageAlt,
+  type = 'website',
+  noindex = false,
+  keywords = [],
+  publishedTime,
+  modifiedTime,
+  author,
+  section,
+} = Astro.props;
+
+const resolvedTitle = pageTitle(title);
+const resolvedDescription = clampDescription(description || SITE.description);
+const resolvedCanonical = canonical || canonicalFromUrl(Astro.url);
+const resolvedImage = absoluteUrl(image);
+const resolvedImageAlt = imageAlt || title || SITE.name;
+const robots = noindex
+  ? 'noindex, nofollow'
+  : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
+---
+
+<title>{resolvedTitle}</title>
+<meta name="description" content={resolvedDescription} />
+<link rel="canonical" href={resolvedCanonical} />
+<meta name="robots" content={robots} />
+<meta name="googlebot" content={robots} />
+{keywords.length > 0 && <meta name="keywords" content={keywords.join(', ')} />}
+{author && <meta name="author" content={author} />}
+
+{/* OpenGraph */}
+<meta property="og:type" content={type} />
+<meta property="og:site_name" content={SITE.name} />
+<meta property="og:title" content={resolvedTitle} />
+<meta property="og:description" content={resolvedDescription} />
+<meta property="og:url" content={resolvedCanonical} />
+<meta property="og:image" content={resolvedImage} />
+<meta property="og:image:alt" content={resolvedImageAlt} />
+<meta property="og:locale" content={SITE.locale} />
+{type === 'article' && publishedTime && <meta property="article:published_time" content={publishedTime} />}
+{type === 'article' && modifiedTime && <meta property="article:modified_time" content={modifiedTime} />}
+{type === 'article' && author && <meta property="article:author" content={author} />}
+{type === 'article' && section && <meta property="article:section" content={section} />}
+{type === 'article' && keywords.map((k) => <meta property="article:tag" content={k} />)}
+
+{/* Twitter Card */}
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:site" content={SITE.twitter} />
+<meta name="twitter:creator" content={SITE.twitter} />
+<meta name="twitter:title" content={resolvedTitle} />
+<meta name="twitter:description" content={resolvedDescription} />
+<meta name="twitter:image" content={resolvedImage} />
+<meta name="twitter:image:alt" content={resolvedImageAlt} />

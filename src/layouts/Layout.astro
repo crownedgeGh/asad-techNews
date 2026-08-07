@@ -2,36 +2,113 @@
 import '../styles/global.css';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer.astro';
+import SEO from '../components/seo/SEO.astro';
+import JsonLd from '../components/seo/JsonLd.astro';
+import { organizationSchema, websiteSchema } from '../lib/schema';
+import { SITE } from '../lib/seo';
 
 interface Props {
-	title: string;
+  title?: string;
+  description?: string;
+  canonical?: string;
+  image?: string;
+  imageAlt?: string;
+  type?: 'website' | 'article';
+  noindex?: boolean;
+  keywords?: string[];
+  publishedTime?: string;
+  modifiedTime?: string;
+  author?: string;
+  section?: string;
+  /** Page-specific structured data (single object or array). */
+  jsonLd?: Record<string, any> | Record<string, any>[];
 }
 
-const { title } = Astro.props;
+const {
+  title,
+  description,
+  canonical,
+  image,
+  imageAlt,
+  type = 'website',
+  noindex = false,
+  keywords,
+  publishedTime,
+  modifiedTime,
+  author,
+  section,
+  jsonLd,
+} = Astro.props;
+
+// Sitewide entities (Organization + WebSite/SearchAction) emitted on every page.
+const globalSchema = [organizationSchema(), websiteSchema()];
+
+// Preconnect to the R2 image origin so cover images (LCP) start loading sooner.
+const r2Public = import.meta.env.CLOUDFLARE_R2_PUBLIC_URL as string | undefined;
+let r2Origin: string | null = null;
+try {
+  if (r2Public) r2Origin = new URL(r2Public).origin;
+} catch {
+  r2Origin = null;
+}
 ---
 
 <!doctype html>
-<html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="description" content="Astro description" />
-		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/png" href="/favicon.png" />
-		<meta name="generator" content={Astro.generator} />
-		<title>{title} | The Lumen Tech</title>
-		<script is:inline>
-			if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-				document.documentElement.classList.add('dark');
-			} else {
-				document.documentElement.classList.remove('dark');
-			}
-		</script>
-	</head>
-	<body class="bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark min-h-screen flex flex-col font-body">
-		<Navbar client:load />
-		<main class="flex-grow">
-			<slot />
-		</main>
-		<Footer />
-	</body>
+<html lang={SITE.lang}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+
+    <SEO
+      title={title}
+      description={description}
+      canonical={canonical}
+      image={image}
+      imageAlt={imageAlt}
+      type={type}
+      noindex={noindex}
+      keywords={keywords}
+      publishedTime={publishedTime}
+      modifiedTime={modifiedTime}
+      author={author}
+      section={section}
+    />
+
+    {/* Icons & PWA */}
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/favicon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#0b0f17" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+
+    {/* Feeds */}
+    <link rel="alternate" type="application/rss+xml" title={`${SITE.name} — RSS Feed`} href="/rss.xml" />
+
+    {/* Resource hints for faster image LCP */}
+    {r2Origin && <link rel="preconnect" href={r2Origin} crossorigin />}
+    {r2Origin && <link rel="dns-prefetch" href={r2Origin} />}
+
+    {/* Sitewide structured data */}
+    <JsonLd schema={globalSchema} />
+    {jsonLd && <JsonLd schema={jsonLd} />}
+
+    <slot name="head" />
+
+    <script is:inline>
+      if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    </script>
+  </head>
+  <body class="bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark min-h-screen flex flex-col font-body">
+    <Navbar client:load />
+    <main class="flex-grow">
+      <slot />
+    </main>
+    <Footer />
+  </body>
 </html>
