@@ -2,7 +2,7 @@ import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '../../../lib/utils';
 
-const badgeVariants = cva('badge', {
+const badgeVariants = cva('badge whitespace-nowrap', {
   variants: {
     variant: {
       default: 'badge-primary badge-soft',

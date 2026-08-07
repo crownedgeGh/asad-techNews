@@ -226,6 +226,7 @@ function ArticlesTableInner() {
     {
       key: 'category',
       header: 'Category',
+      className: 'whitespace-nowrap',
       render: (a) => <Badge variant="outline">{a.category}</Badge>,
     },
     {
