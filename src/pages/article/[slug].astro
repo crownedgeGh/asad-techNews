@@ -5,7 +5,7 @@ import Comments from '../../components/Comments';
 import RelatedArticles from '../../components/RelatedArticles.astro';
 import { db } from '../../db';
 import { articles, users } from '../../db/schema';
-import { eq, sql } from 'drizzle-orm';
+import { eq, sql, and, desc } from 'drizzle-orm';
 import { formatDate, estimateReadTime } from '../../lib/format';
 import { injectLinkPreviews } from '../../lib/renderArticleContent';
 
@@ -59,15 +59,15 @@ try {
   console.error('Failed to inject link previews:', e);
 }
 
-let featured: { id: number; title: string; slug: string; createdAt: Date }[] = [];
+let featured: { id: number; title: string; slug: string; coverImage: string | null; createdAt: Date }[] = [];
 try {
   featured = await db
-    .select({ id: articles.id, title: articles.title, slug: articles.slug, createdAt: articles.createdAt })
+    .select({ id: articles.id, title: articles.title, slug: articles.slug, coverImage: articles.coverImage, createdAt: articles.createdAt })
     .from(articles)
-    .where(eq(articles.published, true))
-    .orderBy(sql`${articles.views} desc`)
-    .limit(3);
-  featured = featured.filter((a) => a.id !== article.id).slice(0, 2);
+    .where(and(eq(articles.published, true), eq(articles.featured, true)))
+    .orderBy(desc(articles.createdAt))
+    .limit(4);
+  featured = featured.filter((a) => a.id !== article.id).slice(0, 3);
 } catch (e) {
   console.error('Failed to load featured articles:', e);
 }
@@ -75,10 +75,10 @@ try {
 
 <Layout title={article.title}>
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    <div class="grid grid-cols-1 lg:grid-cols-4 gap-12">
-      
-      {/* Main Article Content (Left 3 cols) */}
-      <article class="lg:col-span-3">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-12">
+
+      {/* Main Article Content (Left 2 cols) */}
+      <article class="lg:col-span-2">
         {/* Article Header */}
         <header class="mb-8">
           <div class="flex items-center gap-2 mb-4">
@@ -143,28 +143,36 @@ try {
 
       {/* Sidebar Area (Right 1 col) for Ads & Featured */}
       <aside class="lg:col-span-1">
-        <div class="sticky top-24 space-y-8">
+        <div class="sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto space-y-8 pr-1 [scrollbar-width:thin] [scrollbar-color:#cbd5e1_transparent] dark:[scrollbar-color:#334155_transparent]">
           
           {/* Ad Slot */}
           <div class="bg-slate-100 dark:bg-slate-800 rounded-lg p-4 flex flex-col items-center justify-center border border-slate-200 dark:border-slate-700">
             <span class="text-slate-400 dark:text-slate-500 font-medium text-sm uppercase tracking-widest mb-2">Advertisement</span>
-            <div class="w-full max-w-[300px] aspect-[1/2] bg-slate-200 dark:bg-slate-700 rounded flex items-center justify-center">
+            <div class="w-full max-w-[300px] mx-auto aspect-[1/2] bg-slate-200 dark:bg-slate-700 rounded flex items-center justify-center">
               <span class="text-slate-500 dark:text-slate-400 font-bold text-center px-2">300x600 Ad</span>
             </div>
           </div>
-          
+
           {/* Featured News Widget */}
           <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-6">
             <h3 class="font-heading font-bold text-xl text-slate-900 dark:text-white mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">Featured News</h3>
             {featured.length === 0 ? (
               <p class="text-sm text-slate-500 dark:text-slate-400">No other articles yet.</p>
             ) : (
-              <ul class="space-y-4">
+              <ul class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-5">
                 {featured.map((f) => (
                   <li>
                     <a href={`/article/${f.slug}`} class="group block">
-                      <h4 class="font-bold text-slate-800 dark:text-slate-200 group-hover:text-primary transition-colors">{f.title}</h4>
-                      <p class="text-sm text-slate-500 mt-1">{formatDate(f.createdAt)}</p>
+                      <div class="rounded-lg overflow-hidden aspect-video ring-1 ring-slate-200 dark:ring-slate-800">
+                        <img
+                          src={f.coverImage || '/logo.png'}
+                          alt={f.title}
+                          loading="lazy"
+                          class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                      </div>
+                      <h4 class="font-heading font-bold text-base leading-snug text-slate-800 dark:text-slate-200 group-hover:text-primary transition-colors line-clamp-2 mt-3">{f.title}</h4>
+                      <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">{formatDate(f.createdAt)}</p>
                     </a>
                   </li>
                 ))}

@@ -26,7 +26,7 @@ export function Pagination({ page, totalPages, onPageChange }: PaginationProps) 
   const pages = getPageList(page, totalPages);
 
   return (
-    <nav className="join" aria-label="Pagination">
+    <nav className="join flex-wrap justify-center gap-y-1.5" aria-label="Pagination">
       <button
         className="join-item btn btn-outline btn-sm"
         onClick={() => onPageChange(page - 1)}

@@ -164,6 +164,31 @@ function ArticlesTableInner() {
     }
   };
 
+  const handleToggleFeatured = async (article: Article, isFeatured: boolean) => {
+    // Optimistic UI update
+    setArticles((prev) =>
+      prev.map((a) => (a.id === article.id ? { ...a, featured: isFeatured } : a))
+    );
+
+    try {
+      const res = await fetch(`/api/admin/articles/${article.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ featured: isFeatured }),
+      });
+
+      if (!res.ok) throw new Error('Failed to update featured status');
+      toast.success(isFeatured ? 'Article added to featured' : 'Article removed from featured');
+      dispatch(clearArticlesListCache());
+    } catch {
+      toast.error('Failed to update featured status');
+      // Rollback on failure
+      setArticles((prev) =>
+        prev.map((a) => (a.id === article.id ? { ...a, featured: !isFeatured } : a))
+      );
+    }
+  };
+
   const canReorder = filter === 'all' && !searchQuery;
 
   const columns: Column<Article>[] = [
@@ -186,6 +211,9 @@ function ArticlesTableInner() {
               <p className="font-medium text-sm text-base-content line-clamp-1 max-w-xs">{a.title}</p>
               {a.trending && (
                 <span className="badge badge-warning badge-xs shrink-0 font-bold text-[10px] uppercase">Trending</span>
+              )}
+              {a.featured && (
+                <span className="badge badge-info badge-xs shrink-0 font-bold text-[10px] uppercase">Featured</span>
               )}
             </div>
             <p className="text-xs text-base-content/60 mt-0.5 line-clamp-1 max-w-xs">
@@ -228,12 +256,23 @@ function ArticlesTableInner() {
       header: 'Actions',
       render: (a, index) => (
         <div className="flex items-center gap-1 flex-wrap justify-end" onClick={(e) => e.stopPropagation()}>
-          <div className="flex items-center gap-1.5 mr-2 bg-base-200/50 hover:bg-base-200 px-2 py-1 rounded-md transition-colors border border-base-300/40">
-            <span className="text-[11px] font-semibold text-base-content/60 uppercase">Trending</span>
-            <Switch
-              checked={a.trending}
-              onCheckedChange={(checked) => handleToggleTrending(a, checked)}
-            />
+          <div className="flex flex-col gap-1 mr-2 bg-base-200/50 px-2 py-1 rounded-md border border-base-300/40">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[11px] font-semibold text-base-content/60 uppercase">Trending</span>
+              <Switch
+                className="toggle-sm"
+                checked={a.trending}
+                onCheckedChange={(checked) => handleToggleTrending(a, checked)}
+              />
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[11px] font-semibold text-base-content/60 uppercase">Featured</span>
+              <Switch
+                className="toggle-sm"
+                checked={a.featured}
+                onCheckedChange={(checked) => handleToggleFeatured(a, checked)}
+              />
+            </div>
           </div>
           <Button variant="ghost" size="xs" asChild>
             <a href={`/admin/articles/${a.id}/edit`}>
@@ -352,13 +391,16 @@ function ArticlesTableInner() {
               </div>
 
               {/* Content */}
-              <div className="flex flex-col flex-1 justify-center min-w-0 pr-6 sm:pr-0">
+              <div className="flex flex-col flex-1 justify-center min-w-0 pr-9 sm:pr-10">
                 <div className="flex items-start gap-2 flex-wrap mb-1">
                   <h3 className="font-bold text-base sm:text-xl line-clamp-2 leading-tight text-base-content">
                     {a.title}
                   </h3>
                   {a.trending && (
                     <span className="badge badge-warning badge-xs shrink-0 font-bold text-[10px] uppercase mt-1">Trending</span>
+                  )}
+                  {a.featured && (
+                    <span className="badge badge-info badge-xs shrink-0 font-bold text-[10px] uppercase mt-1">Featured</span>
                   )}
                 </div>
                 <p className="text-xs sm:text-sm text-base-content/60 font-medium mb-2">
@@ -370,10 +412,10 @@ function ArticlesTableInner() {
               </div>
 
               {/* Actions Dropdown */}
-              <div className="absolute top-2 right-0 sm:top-4 sm:right-4" onClick={(e) => e.stopPropagation()}>
+              <div className="absolute top-2 right-1 sm:top-4 sm:right-4" onClick={(e) => e.stopPropagation()}>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon-sm">
+                    <Button variant="ghost" size="icon-sm" aria-label="Article actions">
                       <MoreVertical className="text-base-content/60" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -385,6 +427,9 @@ function ArticlesTableInner() {
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleToggleTrending(a, !a.trending)}>
                       <span>{a.trending ? '⭐ Remove Trending' : '⭐ Make Trending'}</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleToggleFeatured(a, !a.featured)}>
+                      <span>{a.featured ? '★ Remove Featured' : '★ Make Featured'}</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem destructive onClick={() => setDeleteTarget(a)}>
                       <Trash2 /> Delete

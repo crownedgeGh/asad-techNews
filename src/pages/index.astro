@@ -3,8 +3,8 @@ import Layout from '../layouts/Layout.astro';
 import ArticleCard from '../components/ArticleCard.astro';
 import { db } from '../db';
 import { articles } from '../db/schema';
-import { eq, desc } from 'drizzle-orm';
-import { formatDateTime, formatViews } from '../lib/format';
+import { eq, desc, and } from 'drizzle-orm';
+import { formatDateTime, formatDate, formatViews } from '../lib/format';
 
 export const prerender = false;
 
@@ -19,6 +19,18 @@ try {
 } catch (e) {
   console.error('Failed to load articles for homepage:', e);
 }
+
+let featuredArticles: (typeof articles.$inferSelect)[] = [];
+try {
+  featuredArticles = await db
+    .select()
+    .from(articles)
+    .where(and(eq(articles.published, true), eq(articles.featured, true)))
+    .orderBy(desc(articles.createdAt))
+    .limit(6);
+} catch (e) {
+  console.error('Failed to load featured articles for homepage:', e);
+}
 ---
 
 <Layout title="Home">
@@ -27,7 +39,31 @@ try {
       
       {/* Main Content Area (Left 3 cols) */}
       <div class="lg:col-span-3">
-        
+
+        {/* Featured Section */}
+        {featuredArticles.length > 0 && (
+          <section class="mb-12">
+            <h2 class="text-3xl font-heading font-bold text-slate-900 dark:text-white mb-6 uppercase border-b border-slate-300 dark:border-slate-800 pb-3">FEATURED <span class="text-primary font-light">NEWS</span></h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {featuredArticles.map(article => (
+                <a href={`/article/${article.slug}`} class="group block">
+                  <div class="rounded-lg overflow-hidden aspect-video ring-1 ring-slate-200 dark:ring-slate-800">
+                    <img
+                      src={article.coverImage || '/logo.png'}
+                      alt={article.title}
+                      loading="lazy"
+                      class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  </div>
+                  <span class="text-xs font-bold uppercase tracking-widest text-primary mt-3 inline-block">{article.category}</span>
+                  <h3 class="font-heading font-bold text-lg leading-snug text-slate-800 dark:text-slate-100 group-hover:text-primary transition-colors line-clamp-2 mt-1">{article.title}</h3>
+                  <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">{formatDate(article.createdAt)} &bull; {formatViews(article.views)} Views</p>
+                </a>
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* Latest News Section */}
         <section>
           <h2 class="text-3xl font-heading font-bold text-slate-900 dark:text-white mb-6 uppercase border-b border-slate-300 dark:border-slate-800 pb-3">LATEST <span class="text-primary font-light">NEWS</span></h2>
