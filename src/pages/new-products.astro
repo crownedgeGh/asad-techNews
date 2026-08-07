@@ -13,18 +13,18 @@ try {
   categoryArticles = await db
     .select()
     .from(articles)
-    .where(and(eq(articles.published, true), eq(articles.category, 'AI Tools')))
+    .where(and(eq(articles.published, true), eq(articles.category, 'New Products')))
     .orderBy(sql`(${articles.sortOrder} = 0)`, asc(articles.sortOrder), desc(articles.createdAt))
     .limit(30);
 } catch (e) {
-  console.error('Failed to load AI Tools articles:', e);
+  console.error('Failed to load New Products articles:', e);
 }
 ---
 
-<Layout title="AI Tools">
+<Layout title="New Products">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
     <h1 class="text-3xl font-heading font-bold text-slate-900 dark:text-white mb-8 uppercase border-b border-slate-300 dark:border-slate-800 pb-3">
-      AI <span class="text-primary font-light">Tools</span>
+      New <span class="text-primary font-light">Products</span>
     </h1>
     <div class="flex flex-col max-w-4xl">
       {categoryArticles.length === 0 && (

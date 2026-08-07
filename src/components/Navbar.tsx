@@ -5,7 +5,7 @@ const navLinks = [
   { name: 'Home', path: '/' },
   { name: 'Trending', path: '/trending' },
   { name: 'Tech News', path: '/tech-news' },
-  { name: 'AI Tools', path: '/ai-tools' },
+  { name: 'New Products', path: '/new-products' },
   { name: 'Reviews', path: '/reviews' },
   { name: 'General News', path: '/general' },
 ];
