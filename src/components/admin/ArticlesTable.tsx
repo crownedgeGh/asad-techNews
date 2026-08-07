@@ -46,14 +46,15 @@ function PositionSelect({
       value={String(article.sortOrder)}
       onValueChange={(v) => onChange(Number(v))}
     >
-      <SelectTrigger className="h-8 w-28 text-xs" title="Set trend position">
+      <SelectTrigger className="h-8 w-20 shrink-0 gap-1 px-2 text-xs" title="Set trend position">
+        <ListOrdered className="h-3 w-3 shrink-0 opacity-60" />
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="0">Auto (date)</SelectItem>
+        <SelectItem value="0">Auto</SelectItem>
         {Array.from({ length: MAX_POSITION }, (_, i) => i + 1).map((p) => (
           <SelectItem key={p} value={String(p)}>
-            Position {p}
+            {p}
           </SelectItem>
         ))}
       </SelectContent>
@@ -463,7 +464,7 @@ function ArticlesTableInner() {
                             checked={a.sortOrder === p}
                             onSelect={() => handleReorder(a, p)}
                           >
-                            Position {p}
+                            {p}
                           </DropdownMenuCheckboxItem>
                         ))}
                       </>
