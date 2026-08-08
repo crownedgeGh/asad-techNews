@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import ArticleCard from '../components/ArticleCard.astro';
 import FeaturedSidebar from '../components/FeaturedSidebar.astro';
+import Pagination from '../components/Pagination.astro';
 import { db } from '../db';
 import { articles } from '../db/schema';
 import { eq, asc, desc, sql } from 'drizzle-orm';
@@ -11,22 +12,37 @@ import { collectionPageSchema } from '../lib/schema';
 
 export const prerender = false;
 
+const PAGE_SIZE = 15;
+const pageParam = Astro.url.searchParams.get('page');
+const page = Math.max(1, parseInt(pageParam || '1', 10) || 1);
+const offset = (page - 1) * PAGE_SIZE;
+
 let allArticles: (typeof articles.$inferSelect)[] = [];
+let totalArticles = 0;
+
 try {
-  allArticles = await db
-    .select()
-    .from(articles)
-    .where(eq(articles.published, true))
-    .orderBy(sql`(${articles.sortOrder} = 0)`, asc(articles.sortOrder), desc(articles.createdAt))
-    .limit(30);
+  const [rows, [{ count }]] = await Promise.all([
+    db
+      .select()
+      .from(articles)
+      .where(eq(articles.published, true))
+      .orderBy(sql`(${articles.sortOrder} = 0)`, asc(articles.sortOrder), desc(articles.createdAt))
+      .limit(PAGE_SIZE)
+      .offset(offset),
+    db.select({ count: sql<number>`count(*)::int` }).from(articles).where(eq(articles.published, true)),
+  ]);
+  allArticles = rows;
+  totalArticles = count;
 } catch (e) {
   console.error('Failed to load articles for homepage:', e);
 }
 
+const totalPages = Math.ceil(totalArticles / PAGE_SIZE);
+
 const jsonLd = collectionPageSchema({
   name: SITE.title,
   description: SITE.description,
-  url: SITE.url,
+  url: page > 1 ? `${SITE.url}?page=${page}` : SITE.url,
   items: allArticles.map((a) => ({ title: a.title, url: `/article/${a.slug}` })),
 });
 ---
@@ -57,6 +73,8 @@ const jsonLd = collectionPageSchema({
               />
             ))}
           </div>
+
+          <Pagination currentPage={page} totalPages={totalPages} baseUrl="/" />
         </section>
 
       </div>

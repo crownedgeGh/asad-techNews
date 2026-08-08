@@ -1,0 +1,108 @@
+---
+interface Props {
+  currentPage: number;
+  totalPages: number;
+  baseUrl: string;
+}
+
+const { currentPage, totalPages, baseUrl } = Astro.props;
+
+// Generate page list with ellipsis (e.g. 1, 2, 'ellipsis', 5, 6, 7, 'ellipsis', 9, 10)
+const getPageList = (page: number, total: number) => {
+  const pages: (number | 'ellipsis')[] = [];
+  const window = 1; // Number of pages to show around current page
+  
+  for (let i = 1; i <= total; i++) {
+    if (i === 1 || i === total || (i >= page - window && i <= page + window)) {
+      pages.push(i);
+    } else if (pages[pages.length - 1] !== 'ellipsis') {
+      pages.push('ellipsis');
+    }
+  }
+  return pages;
+};
+
+const pages = getPageList(currentPage, totalPages);
+
+const getPageUrl = (p: number) => {
+  if (p === 1) return baseUrl;
+  return `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}page=${p}`;
+};
+---
+
+{totalPages > 1 && (
+  <nav class="flex flex-wrap items-center justify-center gap-2 mt-12 border-t border-slate-200 dark:border-slate-800 pt-8" aria-label="Pagination">
+    {/* Previous Button */}
+    {currentPage > 1 ? (
+      <a
+        href={getPageUrl(currentPage - 1)}
+        class="inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors shadow-sm"
+        aria-label="Previous page"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 mr-1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+        </svg>
+        Prev
+      </a>
+    ) : (
+      <span
+        class="inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-slate-400 dark:text-slate-600 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-900 rounded-md cursor-not-allowed shadow-sm"
+        aria-disabled="true"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 mr-1.5 text-slate-300 dark:text-slate-700">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+        </svg>
+        Prev
+      </span>
+    )}
+
+    {/* Page Numbers */}
+    <div class="flex items-center gap-1.5">
+      {pages.map((p) => (
+        p === 'ellipsis' ? (
+          <span class="px-2 py-2 text-sm text-slate-400 dark:text-slate-600 font-medium">
+            &hellip;
+          </span>
+        ) : p === currentPage ? (
+          <span
+            class="inline-flex items-center justify-center w-10 h-10 text-sm font-bold text-white bg-primary rounded-md shadow-sm"
+            aria-current="page"
+          >
+            {p}
+          </span>
+        ) : (
+          <a
+            href={getPageUrl(p)}
+            class="inline-flex items-center justify-center w-10 h-10 text-sm font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors shadow-sm"
+          >
+            {p}
+          </a>
+        )
+      ))}
+    </div>
+
+    {/* Next Button */}
+    {currentPage < totalPages ? (
+      <a
+        href={getPageUrl(currentPage + 1)}
+        class="inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors shadow-sm"
+        aria-label="Next page"
+      >
+        Next
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 ml-1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+        </svg>
+      </a>
+    ) : (
+      <span
+        class="inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-slate-400 dark:text-slate-600 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-900 rounded-md cursor-not-allowed shadow-sm"
+        aria-disabled="true"
+      >
+        Next
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 ml-1.5 text-slate-300 dark:text-slate-700">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+        </svg>
+      </span>
+    )}
+  </nav>
+)}
