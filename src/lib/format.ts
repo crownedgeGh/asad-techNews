@@ -1,23 +1,29 @@
+export function getRelativeTime(date: Date | string): string {
+  const d = new Date(date);
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffMins = Math.max(0, Math.floor(diffMs / (1000 * 60)));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffDays >= 1) {
+    return `${diffDays} day ago`;
+  } else if (diffHours >= 1) {
+    return `${diffHours} hr ago`;
+  } else {
+    if (diffMins <= 1) {
+      return '1 mnt ago';
+    }
+    return `${diffMins} mnts ago`;
+  }
+}
+
 export function formatDate(date: Date | string) {
-  return new Date(date).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
+  return getRelativeTime(date);
 }
 
 export function formatDateTime(date: Date | string) {
-  const d = new Date(date);
-  const datePart = d.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-  const timePart = d.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-  });
-  return `${datePart} • ${timePart}`;
+  return getRelativeTime(date);
 }
 
 export function formatViews(n: number) {

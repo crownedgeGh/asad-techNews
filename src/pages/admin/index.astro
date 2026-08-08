@@ -3,6 +3,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 import { db } from '../../db';
 import { articles } from '../../db/schema';
 import { sql, desc } from 'drizzle-orm';
+import { formatDate } from '../../lib/format';
 
 // Aggregate stats (graceful fallback if DB not configured)
 let stats: { totalArticles: number; totalViews: number; totalLikes: number; totalComments: number } | null = null;
@@ -32,12 +33,6 @@ try {
 } catch (e) {
   dbError = true;
   console.warn('Admin dashboard: DB unavailable, showing empty stats.');
-}
-
-function formatDate(date: Date) {
-  return new Date(date).toLocaleDateString('en-US', {
-    month: 'short', day: 'numeric', year: 'numeric'
-  });
 }
 
 const statCards = [
