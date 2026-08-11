@@ -1,33 +1,40 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { FiLink, FiFacebook, FiLinkedin, FiHeart } from 'react-icons/fi';
 import { FaXTwitter } from 'react-icons/fa6';
 
-export default function SocialShare({ url, title }: { url: string, title: string }) {
-  const [liked, setLiked] = useState(false);
-  const [likesCount, setLikesCount] = useState(42);
+interface SocialShareProps {
+  url: string;
+  title: string;
+  slug: string;
+  initialLikes: number;
+  initialLiked: boolean;
+}
 
-  useEffect(() => {
-    const savedLiked = localStorage.getItem(`liked_${url}`) === 'true';
-    const savedCount = localStorage.getItem(`likesCount_${url}`);
-    if (savedLiked) {
-      setLiked(true);
-    }
-    if (savedCount !== null) {
-      setLikesCount(parseInt(savedCount, 10));
-    } else {
-      const initialLikes = (title.length * 3) % 45 + 12;
-      setLikesCount(initialLikes);
-      localStorage.setItem(`likesCount_${url}`, initialLikes.toString());
-    }
-  }, [url, title]);
+export default function SocialShare({ url, title, slug, initialLikes, initialLiked }: SocialShareProps) {
+  const [liked, setLiked] = useState(initialLiked);
+  const [likesCount, setLikesCount] = useState(initialLikes);
+  const [pending, setPending] = useState(false);
 
-  const handleLike = () => {
-    const newLiked = !liked;
-    const newCount = likesCount + (newLiked ? 1 : -1);
-    setLiked(newLiked);
-    setLikesCount(newCount);
-    localStorage.setItem(`liked_${url}`, newLiked.toString());
-    localStorage.setItem(`likesCount_${url}`, newCount.toString());
+  const handleLike = async () => {
+    if (pending) return;
+    setPending(true);
+    const prevLiked = liked;
+    const prevCount = likesCount;
+    // Optimistic update, rolled back on failure.
+    setLiked(!prevLiked);
+    setLikesCount(prevCount + (prevLiked ? -1 : 1));
+    try {
+      const res = await fetch(`/api/articles/${slug}/like`, { method: 'POST' });
+      if (!res.ok) throw new Error('Request failed');
+      const data = await res.json();
+      setLiked(data.liked);
+      setLikesCount(data.likes);
+    } catch {
+      setLiked(prevLiked);
+      setLikesCount(prevCount);
+    } finally {
+      setPending(false);
+    }
   };
 
   const copyToClipboard = () => {

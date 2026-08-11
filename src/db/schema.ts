@@ -19,6 +19,18 @@ export const linkPreviews = pgTable('link_previews', {
   fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
 });
 
+export const comments = pgTable('comments', {
+  id: serial('id').primaryKey(),
+  articleId: integer('article_id')
+    .notNull()
+    .references(() => articles.id, { onDelete: 'cascade' }),
+  name: text('name'),
+  body: text('body').notNull(),
+  upvotes: integer('upvotes').default(0).notNull(),
+  ipHash: text('ip_hash'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
 export const articles = pgTable('articles', {
   id: serial('id').primaryKey(),
   title: text('title').notNull(),
