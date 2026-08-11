@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
-import { Pencil, Trash2, MoreVertical, ListOrdered, Search, ImageOff, Trash, RefreshCw } from 'lucide-react';
+import { Pencil, Trash2, MoreVertical, ListOrdered, Search, ImageOff, Trash, RefreshCw, RotateCcw } from 'lucide-react';
 import { AdminTable, type Column } from './AdminTable';
 import { ConfirmModal } from './ConfirmModal';
 import { Input } from './ui/input';
@@ -77,6 +77,7 @@ function ArticlesTableInner() {
   const [refreshing, setRefreshing] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Article | null>(null);
   const [deleteAllOpen, setDeleteAllOpen] = useState(false);
+  const [resetPositionsOpen, setResetPositionsOpen] = useState(false);
   const pageSize = 15;
 
   const setPage = (v: number) => dispatch(setArticlesFilters({ page: v }));
@@ -154,6 +155,21 @@ function ArticlesTableInner() {
     }
   };
 
+  const handleResetPositions = async () => {
+    try {
+      const res = await fetch('/api/admin/articles/reset-positions', { method: 'POST' });
+      if (!res.ok) throw new Error('Failed to reset positions');
+
+      toast.success('All articles reset to date/time order');
+      dispatch(clearArticlesListCache());
+      await fetchArticles(page, filter, searchQuery, { silent: true });
+    } catch {
+      toast.error('Failed to reset positions');
+    } finally {
+      setResetPositionsOpen(false);
+    }
+  };
+
   const handleReorder = async (article: Article, position: number) => {
     try {
       const res = await fetch(`/api/admin/articles/${article.id}/reorder`, {
@@ -220,6 +236,31 @@ function ArticlesTableInner() {
     }
   };
 
+  const handleTogglePublished = async (article: Article, isPublished: boolean) => {
+    // Optimistic UI update
+    setArticles((prev) =>
+      prev.map((a) => (a.id === article.id ? { ...a, published: isPublished } : a))
+    );
+
+    try {
+      const res = await fetch(`/api/admin/articles/${article.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ published: isPublished }),
+      });
+
+      if (!res.ok) throw new Error('Failed to update status');
+      toast.success(isPublished ? 'Article published' : 'Article moved to draft');
+      dispatch(clearArticlesListCache());
+    } catch {
+      toast.error('Failed to update status');
+      // Rollback on failure
+      setArticles((prev) =>
+        prev.map((a) => (a.id === article.id ? { ...a, published: !isPublished } : a))
+      );
+    }
+  };
+
   const canReorder = filter === 'all' && !searchQuery;
 
   const columns: Column<Article>[] = [
@@ -281,7 +322,16 @@ function ArticlesTableInner() {
     {
       key: 'published',
       header: 'Status',
-      render: (a) => <Badge variant={a.published ? 'success' : 'warning'}>{a.published ? 'Published' : 'Draft'}</Badge>,
+      render: (a) => (
+        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+          <Switch
+            className="toggle-sm"
+            checked={a.published}
+            onCheckedChange={(checked) => handleTogglePublished(a, checked)}
+          />
+          <Badge variant={a.published ? 'success' : 'warning'}>{a.published ? 'Published' : 'Draft'}</Badge>
+        </div>
+      ),
     },
     {
       key: 'actions',
@@ -365,9 +415,20 @@ function ArticlesTableInner() {
           </span>
         )}
 
+        {canReorder && (
+          <Button
+            variant="outline"
+            className="w-full sm:w-auto sm:ml-auto"
+            disabled={total === 0}
+            onClick={() => setResetPositionsOpen(true)}
+          >
+            <RotateCcw /> Reset Position
+          </Button>
+        )}
+
         <Button
           variant="outline"
-          className="text-error hover:text-error w-full sm:w-auto sm:ml-auto"
+          className={`text-error hover:text-error w-full sm:w-auto ${canReorder ? '' : 'sm:ml-auto'}`}
           disabled={total === 0}
           onClick={() => setDeleteAllOpen(true)}
         >
@@ -500,6 +561,14 @@ function ArticlesTableInner() {
         variant="danger"
         onConfirm={handleDeleteAll}
         onCancel={() => setDeleteAllOpen(false)}
+      />
+
+      <ConfirmModal
+        open={resetPositionsOpen}
+        message="Reset all articles to automatic date/time order? Any manually pinned trend positions will be cleared."
+        confirmLabel="Reset Position"
+        onConfirm={handleResetPositions}
+        onCancel={() => setResetPositionsOpen(false)}
       />
     </>
   );
