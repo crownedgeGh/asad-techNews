@@ -1,0 +1,49 @@
+---
+// Loads Google Analytics (GA4) and Google AdSense, gated behind cookie
+// consent (see CookieConsent.tsx). Both env vars are optional — omit either
+// to keep that integration fully dark.
+import { GA_MEASUREMENT_ID, ADSENSE_CLIENT_ID } from '../lib/monetization';
+---
+
+{ADSENSE_CLIENT_ID && <meta name="google-adsense-account" content={ADSENSE_CLIENT_ID} />}
+
+{(GA_MEASUREMENT_ID || ADSENSE_CLIENT_ID) && (
+  <script define:vars={{ GA_MEASUREMENT_ID, ADSENSE_CLIENT_ID }} is:inline>
+    function loadScript(src, attrs) {
+      if (document.querySelector(`script[src="${src}"]`)) return;
+      const s = document.createElement('script');
+      s.src = src;
+      s.async = true;
+      for (const key in attrs || {}) s.setAttribute(key, attrs[key]);
+      document.head.appendChild(s);
+    }
+
+    function enableAnalytics() {
+      if (!GA_MEASUREMENT_ID) return;
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { window.dataLayer.push(arguments); }
+      window.gtag = gtag;
+      gtag('js', new Date());
+      gtag('config', GA_MEASUREMENT_ID, { anonymize_ip: true });
+      loadScript(`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`);
+    }
+
+    function enableAds() {
+      if (!ADSENSE_CLIENT_ID) return;
+      loadScript(
+        `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT_ID}`,
+        { crossorigin: 'anonymous' }
+      );
+    }
+
+    function applyConsent() {
+      if (localStorage.getItem('cookie-consent') === 'accepted') {
+        enableAnalytics();
+        enableAds();
+      }
+    }
+
+    applyConsent();
+    window.addEventListener('cookie-consent-changed', applyConsent);
+  </script>
+)}

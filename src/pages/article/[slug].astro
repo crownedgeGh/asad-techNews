@@ -4,6 +4,8 @@ import SocialShare from '../../components/SocialShare';
 import Comments from '../../components/Comments';
 import RelatedArticles from '../../components/RelatedArticles.astro';
 import Breadcrumbs from '../../components/seo/Breadcrumbs.astro';
+import AdSlot from '../../components/AdSlot';
+import { AD_SLOTS } from '../../lib/monetization';
 import { db } from '../../db';
 import { articles, users, comments } from '../../db/schema';
 import { eq, sql, and, desc } from 'drizzle-orm';
@@ -207,13 +209,8 @@ try {
           <div set:html={renderedContent} />
         </div>
 
-        {/* Inline Ad Slot (Simulated) */}
-        <div class="my-10 bg-slate-100 dark:bg-slate-800 rounded-lg p-6 flex flex-col items-center justify-center min-h-[150px] border border-slate-200 dark:border-slate-700">
-           <span class="text-slate-400 dark:text-slate-500 font-medium text-sm uppercase tracking-widest mb-2">Advertisement</span>
-           <div class="w-full max-w-[728px] h-[90px] bg-slate-200 dark:bg-slate-700 rounded flex items-center justify-center">
-             <span class="text-slate-500 dark:text-slate-400 font-bold">728x90 Leaderboard</span>
-           </div>
-        </div>
+        {/* Inline Ad Slot */}
+        <AdSlot client:visible slot={AD_SLOTS.articleInline} className="max-w-[728px] mx-auto" />
 
         {/* Comments */}
         <Comments client:load slug={article.slug} initialComments={initialComments} />
@@ -241,12 +238,7 @@ try {
         <div class="sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto space-y-8 pr-1 [scrollbar-width:thin] [scrollbar-color:#cbd5e1_transparent] dark:[scrollbar-color:#334155_transparent]">
           
           {/* Ad Slot */}
-          <div class="bg-slate-100 dark:bg-slate-800 rounded-lg p-4 flex flex-col items-center justify-center border border-slate-200 dark:border-slate-700">
-            <span class="text-slate-400 dark:text-slate-500 font-medium text-sm uppercase tracking-widest mb-2">Advertisement</span>
-            <div class="w-full max-w-[300px] mx-auto aspect-[1/2] bg-slate-200 dark:bg-slate-700 rounded flex items-center justify-center">
-              <span class="text-slate-500 dark:text-slate-400 font-bold text-center px-2">300x600 Ad</span>
-            </div>
-          </div>
+          <AdSlot client:visible slot={AD_SLOTS.articleSidebar} className="max-w-[300px] mx-auto" />
 
           {/* Featured News Widget */}
           <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-6">

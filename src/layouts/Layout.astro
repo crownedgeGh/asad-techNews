@@ -4,6 +4,8 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer.astro';
 import SEO from '../components/seo/SEO.astro';
 import JsonLd from '../components/seo/JsonLd.astro';
+import Analytics from '../components/Analytics.astro';
+import CookieConsent from '../components/CookieConsent';
 import { organizationSchema, websiteSchema } from '../lib/schema';
 import { SITE } from '../lib/seo';
 
@@ -94,6 +96,9 @@ try {
     <JsonLd schema={globalSchema} />
     {jsonLd && <JsonLd schema={jsonLd} />}
 
+    {/* Google Analytics + AdSense (consent-gated) */}
+    <Analytics />
+
     <slot name="head" />
 
     <script is:inline>
@@ -110,5 +115,19 @@ try {
       <slot />
     </main>
     <Footer />
+    <CookieConsent client:idle />
+
+    {/* First-party pageview tracking — anonymous, no cookies, unrelated to the ads/GA consent gate. */}
+    <script is:inline>
+      (function () {
+        var device = window.innerWidth < 768 ? 'mobile' : window.innerWidth < 1024 ? 'tablet' : 'desktop';
+        fetch('/api/track', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: location.pathname, referrer: document.referrer || null, device }),
+          keepalive: true,
+        }).catch(function () {});
+      })();
+    </script>
   </body>
 </html>

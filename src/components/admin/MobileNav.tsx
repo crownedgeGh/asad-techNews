@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Newspaper, Menu, Zap } from 'lucide-react';
+import { LayoutDashboard, Newspaper, BarChart3, Menu, Zap } from 'lucide-react';
 import { Sheet, SheetTrigger, SheetContent, SheetTitle } from './ui/sheet';
 import { Button } from './ui/button';
 import { cn } from '../../lib/utils';
@@ -8,6 +8,7 @@ import { useAdminContext } from '../../context/AdminContext';
 const NAV_ITEMS = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
   { href: '/admin/articles', label: 'Articles', icon: Newspaper, exact: false },
+  { href: '/admin/analytics', label: 'Analytics', icon: BarChart3, exact: false },
 ];
 
 export default function MobileNav({ pathname }: { pathname: string }) {

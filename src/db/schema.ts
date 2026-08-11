@@ -31,6 +31,15 @@ export const comments = pgTable('comments', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
+export const pageViews = pgTable('page_views', {
+  id: serial('id').primaryKey(),
+  path: text('path').notNull(),
+  articleId: integer('article_id').references(() => articles.id, { onDelete: 'set null' }),
+  referrer: text('referrer'),
+  device: text('device'), // 'mobile' | 'tablet' | 'desktop'
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
 export const articles = pgTable('articles', {
   id: serial('id').primaryKey(),
   title: text('title').notNull(),
