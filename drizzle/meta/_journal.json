@@ -36,6 +36,13 @@
       "when": 1786455817440,
       "tag": "0004_gorgeous_mathemanic",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1786755600000,
+      "tag": "0005_fix_author_id_default",
+      "breakpoints": true
     }
   ]
 }
