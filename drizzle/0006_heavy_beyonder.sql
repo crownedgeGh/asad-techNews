@@ -1,0 +1,1 @@
+ALTER TABLE "articles" ADD COLUMN "homepage" boolean DEFAULT false NOT NULL;

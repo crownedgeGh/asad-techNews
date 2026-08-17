@@ -5,7 +5,7 @@ import FeaturedSidebar from '../components/FeaturedSidebar.astro';
 import Pagination from '../components/Pagination.astro';
 import { db } from '../db';
 import { articles } from '../db/schema';
-import { eq, asc, desc, sql } from 'drizzle-orm';
+import { and, eq, or, asc, desc, sql } from 'drizzle-orm';
 import { formatDateTime, formatViews } from '../lib/format';
 import { SITE } from '../lib/seo';
 import { collectionPageSchema } from '../lib/schema';
@@ -20,16 +20,22 @@ const offset = (page - 1) * PAGE_SIZE;
 let allArticles: (typeof articles.$inferSelect)[] = [];
 let totalArticles = 0;
 
+// Tech News always appears on the homepage; other categories only opt in via the homepage toggle.
+const homepageCondition = and(
+  eq(articles.published, true),
+  or(eq(articles.category, 'Tech News'), eq(articles.homepage, true))
+);
+
 try {
   const [rows, [{ count }]] = await Promise.all([
     db
       .select()
       .from(articles)
-      .where(eq(articles.published, true))
+      .where(homepageCondition)
       .orderBy(sql`(${articles.sortOrder} = 0)`, asc(articles.sortOrder), desc(articles.createdAt))
       .limit(PAGE_SIZE)
       .offset(offset),
-    db.select({ count: sql<number>`count(*)::int` }).from(articles).where(eq(articles.published, true)),
+    db.select({ count: sql<number>`count(*)::int` }).from(articles).where(homepageCondition),
   ]);
   allArticles = rows;
   totalArticles = count;

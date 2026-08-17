@@ -43,6 +43,13 @@
       "when": 1786755600000,
       "tag": "0005_fix_author_id_default",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1786955485128,
+      "tag": "0006_heavy_beyonder",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
-import { Pencil, Trash2, MoreVertical, ListOrdered, Search, ImageOff, Trash, RefreshCw, RotateCcw } from 'lucide-react';
+import { Eye, Trash2, MoreVertical, ListOrdered, Search, ImageOff, Trash, RefreshCw, RotateCcw } from 'lucide-react';
 import { AdminTable, type Column } from './AdminTable';
 import { ConfirmModal } from './ConfirmModal';
 import { Input } from './ui/input';
@@ -357,8 +357,8 @@ function ArticlesTableInner() {
             </div>
           </div>
           <Button variant="ghost" size="xs" asChild>
-            <a href={`/admin/articles/${a.id}/edit`}>
-              <Pencil /> Edit
+            <a href={`/admin/articles/${a.id}`}>
+              <Eye /> View
             </a>
           </Button>
           <Button variant="ghost" size="xs" className="text-error" onClick={() => setDeleteTarget(a)}>
@@ -442,7 +442,7 @@ function ArticlesTableInner() {
         loading={loading}
         emptyMessage="No articles found."
         onRowClick={(a) => {
-          window.location.href = `/admin/articles/${a.id}`;
+          window.location.href = `/admin/articles/${a.id}/edit`;
         }}
         renderMobileCard={(a) => {
           const dateStr = formatDateTime(a.createdAt);
@@ -452,7 +452,7 @@ function ArticlesTableInner() {
             <div
               className="flex gap-4 py-4 border-b border-base-300 last:border-0 relative bg-base-100 rounded-none sm:rounded-xl sm:border sm:border-base-300 sm:p-4 sm:mb-4 sm:last:mb-0 cursor-pointer"
               onClick={() => {
-                window.location.href = `/admin/articles/${a.id}`;
+                window.location.href = `/admin/articles/${a.id}/edit`;
               }}
             >
               {/* Cover Image */}
@@ -497,8 +497,8 @@ function ArticlesTableInner() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className={canReorder ? 'max-h-72 overflow-y-auto' : undefined}>
                     <DropdownMenuItem asChild>
-                      <a href={`/admin/articles/${a.id}/edit`}>
-                        <Pencil /> Edit
+                      <a href={`/admin/articles/${a.id}`}>
+                        <Eye /> View
                       </a>
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleToggleTrending(a, !a.trending)}>

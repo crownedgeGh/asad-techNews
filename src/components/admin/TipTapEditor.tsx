@@ -35,6 +35,29 @@ type ToolbarButton = {
   isActive?: (editor: Editor | null) => boolean;
 };
 
+async function uploadImageAtPos(
+  view: import('@tiptap/pm/view').EditorView,
+  pos: number,
+  file: File,
+  setUploadingImage: (v: boolean) => void
+) {
+  setUploadingImage(true);
+  try {
+    const formData = new FormData();
+    formData.append('image', file);
+    const res = await fetch('/api/upload', { method: 'POST', body: formData });
+    if (!res.ok) throw new Error('Upload failed');
+    const { url } = await res.json();
+    const node = view.state.schema.nodes.image.create({ src: url });
+    view.dispatch(view.state.tr.insert(pos, node));
+    toast.success('Image converted to WebP and inserted');
+  } catch {
+    toast.error('Failed to upload image');
+  } finally {
+    setUploadingImage(false);
+  }
+}
+
 export default function TipTapEditor({
   initialContent = '',
   onChange,
@@ -60,6 +83,16 @@ export default function TipTapEditor({
       attributes: {
         class:
           'prose prose-sm max-w-none min-h-[360px] p-4 focus:outline-none article-content-font',
+      },
+      handleDrop: (view, event, _slice, moved) => {
+        if (moved) return false;
+        const file = event.dataTransfer?.files?.[0];
+        if (!file || !file.type.startsWith('image/')) return false;
+        event.preventDefault();
+        const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
+        const pos = coords?.pos ?? view.state.selection.from;
+        uploadImageAtPos(view, pos, file, setUploadingImage);
+        return true;
       },
     },
   });

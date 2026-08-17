@@ -25,6 +25,7 @@ export interface ArticleData {
   coverImage: string;
   published: boolean;
   trending?: boolean;
+  homepage?: boolean;
   credit?: string;
 }
 
@@ -59,11 +60,15 @@ function ArticleFormInner(props: ArticleFormProps) {
   const [coverImage, setCoverImage] = useState(cachedArticle?.coverImage ?? '');
   const [published, setPublished] = useState(cachedArticle?.published ?? false);
   const [trending, setTrending] = useState(cachedArticle?.trending ?? false);
+  const [homepage, setHomepage] = useState(cachedArticle?.homepage ?? false);
   const [credit, setCredit] = useState(cachedArticle?.credit ?? '');
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [loadingArticle, setLoadingArticle] = useState(mode === 'edit' && !cachedArticle);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [isDraggingCover, setIsDraggingCover] = useState(false);
+
+  const isTechNews = category === 'Tech News';
 
   React.useEffect(() => {
     if (mode !== 'edit' || !props.articleId || initialData) return;
@@ -77,6 +82,7 @@ function ArticleFormInner(props: ArticleFormProps) {
       setCoverImage(article.coverImage ?? '');
       setPublished(article.published);
       setTrending(article.trending ?? false);
+      setHomepage(article.homepage ?? false);
       setCredit(article.credit ?? '');
     };
 
@@ -118,9 +124,7 @@ function ArticleFormInner(props: ArticleFormProps) {
     setSlug(e.target.value);
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const uploadCoverImage = async (file: File) => {
     setUploading(true);
     try {
       const formData = new FormData();
@@ -135,6 +139,29 @@ function ArticleFormInner(props: ArticleFormProps) {
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) uploadCoverImage(file);
+  };
+
+  const handleCoverDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    if (!uploading) setIsDraggingCover(true);
+  };
+
+  const handleCoverDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDraggingCover(false);
+  };
+
+  const handleCoverDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDraggingCover(false);
+    if (uploading) return;
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith('image/')) uploadCoverImage(file);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -153,7 +180,17 @@ function ArticleFormInner(props: ArticleFormProps) {
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, slug, content, category, coverImage, published, trending, credit }),
+        body: JSON.stringify({
+          title,
+          slug,
+          content,
+          category,
+          coverImage,
+          published,
+          trending,
+          homepage: isTechNews ? false : homepage,
+          credit,
+        }),
       });
 
       if (!res.ok) {
@@ -240,7 +277,7 @@ function ArticleFormInner(props: ArticleFormProps) {
         />
       </div>
 
-      {/* Category + Published + Trending row */}
+      {/* Category + Published + Trending + Homepage row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="space-y-2">
           <Label htmlFor="article-category">Category *</Label>
@@ -271,12 +308,28 @@ function ArticleFormInner(props: ArticleFormProps) {
             <span className="text-sm text-base-content">{trending ? 'Trending' : 'Not Trending'}</span>
           </div>
         </div>
+        {!isTechNews && (
+          <div className="space-y-2">
+            <Label htmlFor="article-homepage">Homepage</Label>
+            <div className="flex items-center gap-3 h-9">
+              <Switch id="article-homepage" checked={homepage} onCheckedChange={setHomepage} />
+              <span className="text-sm text-base-content">{homepage ? 'Shown on Homepage' : 'Category Page Only'}</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Cover Image */}
       <div className="space-y-2">
         <Label>Cover Image</Label>
-        <div className="flex items-center gap-3 flex-wrap">
+        <div
+          onDragOver={handleCoverDragOver}
+          onDragLeave={handleCoverDragLeave}
+          onDrop={handleCoverDrop}
+          className={`flex items-center gap-3 flex-wrap rounded-lg border border-dashed p-3 transition-colors ${
+            isDraggingCover ? 'border-primary bg-primary/5' : 'border-base-300'
+          }`}
+        >
           <Button variant="outline" size="sm" asChild className="cursor-pointer" disabled={uploading}>
             <label>
               {uploading ? <Loader2 className="animate-spin" /> : <Upload />}
@@ -284,6 +337,7 @@ function ArticleFormInner(props: ArticleFormProps) {
               <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploading} />
             </label>
           </Button>
+          <span className="text-xs text-base-content/60">or drag & drop an image here</span>
           {coverImage && (
             <div className="flex items-center gap-2">
               <img src={coverImage} alt="Cover preview" className="h-12 w-20 object-cover rounded-lg border border-base-300" />

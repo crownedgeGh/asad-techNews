@@ -8,6 +8,7 @@ export interface CachedArticle {
   published: boolean;
   trending: boolean;
   featured: boolean;
+  homepage: boolean;
   views: number;
   likes: number;
   commentsCount: number;
@@ -35,6 +36,7 @@ export interface ArticleDetailCacheEntry {
     published: boolean;
     trending: boolean;
     featured: boolean;
+    homepage: boolean;
     credit?: string;
   };
   fetchedAt: number;
