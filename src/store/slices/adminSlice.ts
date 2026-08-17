@@ -46,6 +46,7 @@ export interface ArticlesFilters {
   page: number;
   filter: string;
   searchQuery: string;
+  category: string;
 }
 
 interface AdminState {
@@ -55,7 +56,7 @@ interface AdminState {
 }
 
 const initialState: AdminState = {
-  articlesFilters: { page: 1, filter: 'all', searchQuery: '' },
+  articlesFilters: { page: 1, filter: 'all', searchQuery: '', category: 'all' },
   articlesListCache: {},
   articleDetailCache: {},
 };

@@ -11,12 +11,16 @@ export const GET: APIRoute = async ({ url }) => {
     const offset = (page - 1) * PAGE_SIZE;
     const search = url.searchParams.get('search')?.trim() || '';
     const filter = url.searchParams.get('filter') || 'all';
+    const category = url.searchParams.get('category')?.trim() || '';
 
     const conditions = [];
     if (search) {
       conditions.push(
         or(ilike(articles.title, `%${search}%`), ilike(articles.content, `%${search}%`))
       );
+    }
+    if (category && category !== 'all') {
+      conditions.push(eq(articles.category, category));
     }
     if (filter === 'published') {
       conditions.push(eq(articles.published, true));
