@@ -59,3 +59,43 @@
 .dark .featured-scroll::-webkit-scrollbar-thumb {
   background-color: #475569;
 }
+
+@keyframes tagline-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes tagline-shimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+.tagline-bar {
+  animation: tagline-in 0.6s ease-out both;
+}
+
+.tagline-shimmer {
+  background: linear-gradient(90deg, #ffffff 0%, #d9fff9 25%, #ffffff 50%, #d9fff9 75%, #ffffff 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: tagline-shimmer 3.5s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tagline-bar,
+  .tagline-shimmer {
+    animation: none;
+  }
+}

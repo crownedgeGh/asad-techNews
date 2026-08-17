@@ -9,7 +9,7 @@
   "scripts": {
     "preinstall": "npx only-allow bun",
     "dev": "astro dev",
-    "dev:prod": "astro dev --mode production",
+    "prod": "astro dev --mode production",
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro"

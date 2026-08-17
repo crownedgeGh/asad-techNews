@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import Navbar from '../components/Navbar';
+import TaglineBar from '../components/TaglineBar.astro';
 import Footer from '../components/Footer.astro';
 import SEO from '../components/seo/SEO.astro';
 import JsonLd from '../components/seo/JsonLd.astro';
@@ -111,6 +112,7 @@ try {
   </head>
   <body class="bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark min-h-screen flex flex-col font-body">
     <Navbar client:load />
+    <TaglineBar />
     <main class="flex-grow">
       <slot />
     </main>
