@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, text, timestamp, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, serial, integer, text, timestamp, boolean, uniqueIndex } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
@@ -40,23 +40,32 @@ export const pageViews = pgTable('page_views', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-export const articles = pgTable('articles', {
-  id: serial('id').primaryKey(),
-  title: text('title').notNull(),
-  slug: text('slug').notNull().unique(),
-  content: text('content').notNull(),
-  coverImage: text('cover_image'),
-  authorId: integer('author_id').references(() => users.id),
-  category: text('category').notNull(),
-  published: boolean('published').default(false).notNull(),
-  trending: boolean('trending').default(false).notNull(),
-  featured: boolean('featured').default(false).notNull(),
-  homepage: boolean('homepage').default(false).notNull(),
-  credit: text('credit'),
-  views: integer('views').default(0).notNull(),
-  likes: integer('likes').default(0).notNull(),
-  commentsCount: integer('comments_count').default(0).notNull(),
-  sortOrder: integer('sort_order').default(0).notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+export const articles = pgTable(
+  'articles',
+  {
+    id: serial('id').primaryKey(),
+    title: text('title').notNull(),
+    slug: text('slug').notNull().unique(),
+    content: text('content').notNull(),
+    coverImage: text('cover_image'),
+    authorId: integer('author_id').references(() => users.id),
+    category: text('category').notNull(),
+    published: boolean('published').default(false).notNull(),
+    trending: boolean('trending').default(false).notNull(),
+    featured: boolean('featured').default(false).notNull(),
+    homepage: boolean('homepage').default(false).notNull(),
+    credit: text('credit'),
+    views: integer('views').default(0).notNull(),
+    likes: integer('likes').default(0).notNull(),
+    commentsCount: integer('comments_count').default(0).notNull(),
+    sortOrder: integer('sort_order').default(0).notNull(),
+    // Lowercased, punctuation-stripped title used to atomically block duplicate
+    // posts at the DB level - concurrent inserts of the same story (e.g. two
+    // pipeline runs racing on the same freshest RSS item) can't both pass an
+    // app-level check-then-insert, but a unique constraint always rejects the loser.
+    normalizedTitle: text('normalized_title').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => [uniqueIndex('articles_normalized_title_idx').on(table.normalizedTitle)]
+);

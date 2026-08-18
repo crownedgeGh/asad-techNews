@@ -50,6 +50,13 @@
       "when": 1786955485128,
       "tag": "0006_heavy_beyonder",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1787038257710,
+      "tag": "0007_shocking_swarm",
+      "breakpoints": true
     }
   ]
 }

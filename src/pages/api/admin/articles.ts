@@ -5,6 +5,20 @@ import { and, asc, desc, ilike, or, sql, eq } from 'drizzle-orm';
 
 const PAGE_SIZE = 15;
 
+// Word-order/punctuation-insensitive fingerprint used to atomically block duplicate
+// posts at the DB level via a unique index - catches the same story being posted
+// twice with the same (or near-identical) title, which a check-then-insert can miss
+// under concurrent requests.
+function normalizeTitle(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean)
+    .sort()
+    .join(' ');
+}
+
 export const GET: APIRoute = async ({ url }) => {
   try {
     const page = parseInt(url.searchParams.get('page') || '1', 10);
@@ -104,6 +118,7 @@ export const POST: APIRoute = async ({ request }) => {
         featured: featured ?? false,
         homepage: homepage ?? false,
         credit: credit ?? null,
+        normalizedTitle: normalizeTitle(title),
       })
       .returning();
 
@@ -113,7 +128,15 @@ export const POST: APIRoute = async ({ request }) => {
     });
   } catch (err: any) {
     console.error('POST /api/admin/articles error:', err);
-    if (err?.cause?.code === '23505' || err?.code === '23505') {
+    const pgCode = err?.cause?.code || err?.code;
+    const constraint = err?.cause?.constraint || err?.constraint || '';
+    if (pgCode === '23505' && constraint.includes('normalized_title')) {
+      return new Response(JSON.stringify({ error: 'An article with this title already exists' }), {
+        status: 409,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    if (pgCode === '23505') {
       return new Response(JSON.stringify({ error: 'Slug already exists' }), {
         status: 409,
         headers: { 'Content-Type': 'application/json' },
