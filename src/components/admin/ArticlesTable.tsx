@@ -127,6 +127,16 @@ function ArticlesTableInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
 
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      dispatch(clearArticlesListCache());
+      fetchArticles(page, filter, searchQuery, category, { silent: true });
+    };
+    window.addEventListener('admin:refresh', handler);
+    return () => window.removeEventListener('admin:refresh', handler);
+  }, [dispatch, fetchArticles, page, filter, searchQuery, category]);
+
   const handleDelete = async () => {
     if (!deleteTarget) return;
     try {

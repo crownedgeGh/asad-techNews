@@ -227,6 +227,16 @@ export default function AnalyticsDashboard() {
   const [data, setData] = useState<AnalyticsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setRefreshKey((k) => k + 1);
+    };
+    window.addEventListener('admin:refresh', handler);
+    return () => window.removeEventListener('admin:refresh', handler);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -251,7 +261,7 @@ export default function AnalyticsDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [range]);
+  }, [range, refreshKey]);
 
   const totals = useMemo(
     () => [
