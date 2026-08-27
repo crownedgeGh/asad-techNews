@@ -12,7 +12,7 @@ import { collectionPageSchema } from '../lib/schema';
 
 export const prerender = false;
 
-const PAGE_SIZE = 15;
+const PAGE_SIZE = 12;
 const pageParam = Astro.url.searchParams.get('page');
 const page = Math.max(1, parseInt(pageParam || '1', 10) || 1);
 const offset = (page - 1) * PAGE_SIZE;
