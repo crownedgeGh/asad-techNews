@@ -1,0 +1,121 @@
+---
+import '../../styles/admin.css';
+import { isAdminAuthenticated } from '../../lib/adminAuth';
+
+if (isAdminAuthenticated(Astro.cookies)) {
+  return Astro.redirect('/admin');
+}
+
+const redirectTo = Astro.url.searchParams.get('redirect') || '/admin';
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <title>Admin Login — The Lumen Tech</title>
+    <script is:inline>
+      if (
+        localStorage.getItem('admin-theme') === 'dark' ||
+        (!('admin-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)
+      ) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      } else {
+        document.documentElement.setAttribute('data-theme', 'emerald');
+      }
+    </script>
+  </head>
+  <body class="min-h-screen bg-base-200 text-base-content font-sans antialiased flex items-center justify-center px-4">
+    <div class="w-full max-w-sm rounded-2xl border border-base-300 bg-base-100 p-8 shadow-sm">
+      <div class="flex items-center gap-2 mb-6">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+        <span class="text-xl font-extrabold tracking-tight">Lumen Admin</span>
+      </div>
+
+      <h1 class="text-lg font-semibold mb-1">Sign in</h1>
+      <p class="text-sm text-base-content/60 mb-6">Enter your admin credentials to continue.</p>
+
+      <form id="login-form" class="space-y-4">
+        <div>
+          <label for="id" class="block text-sm font-medium mb-1.5">Admin ID</label>
+          <input
+            id="id"
+            name="id"
+            type="text"
+            autocomplete="username"
+            required
+            class="input input-bordered w-full h-10 text-sm"
+          />
+        </div>
+        <div>
+          <label for="password" class="block text-sm font-medium mb-1.5">Password</label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            required
+            class="input input-bordered w-full h-10 text-sm"
+          />
+        </div>
+
+        <p id="login-error" class="text-sm text-error hidden"></p>
+
+        <button type="submit" id="login-submit" class="btn btn-primary w-full">
+          Sign in
+        </button>
+      </form>
+    </div>
+
+    <script define:vars={{ redirectTo }}>
+      const form = document.getElementById('login-form');
+      const errorEl = document.getElementById('login-error');
+      const submitBtn = document.getElementById('login-submit');
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        errorEl.classList.add('hidden');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Signing in...';
+
+        const id = document.getElementById('id').value;
+        const password = document.getElementById('password').value;
+
+        try {
+          const res = await fetch('/api/admin/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, password }),
+          });
+
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            errorEl.textContent = data.error || 'Invalid ID or password';
+            errorEl.classList.remove('hidden');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Sign in';
+            return;
+          }
+
+          window.location.href = redirectTo;
+        } catch {
+          errorEl.textContent = 'Something went wrong. Please try again.';
+          errorEl.classList.remove('hidden');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Sign in';
+        }
+      });
+    </script>
+  </body>
+</html>

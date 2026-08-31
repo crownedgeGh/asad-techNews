@@ -4,6 +4,7 @@ import { Sheet, SheetTrigger, SheetContent, SheetTitle } from './ui/sheet';
 import { Button } from './ui/button';
 import { cn } from '../../lib/utils';
 import { useAdminContext } from '../../context/AdminContext';
+import LogoutButton from './LogoutButton';
 
 const NAV_ITEMS = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
@@ -47,6 +48,9 @@ export default function MobileNav({ pathname }: { pathname: string }) {
             </a>
           ))}
         </nav>
+        <div className="mt-2 border-t border-base-300 px-2 pt-2">
+          <LogoutButton />
+        </div>
       </SheetContent>
     </Sheet>
   );
