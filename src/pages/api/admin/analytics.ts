@@ -26,6 +26,7 @@ export const GET: APIRoute = async ({ url }) => {
       topArticleRows,
       deviceRows,
       referrerRows,
+      countryRows,
       [totalsRow],
       [siteStats],
     ] = await Promise.all([
@@ -73,6 +74,17 @@ export const GET: APIRoute = async ({ url }) => {
         .limit(50),
 
       db
+        .select({
+          country: sql<string>`coalesce(${pageViews.country}, 'unknown')`,
+          count: sql<number>`count(*)::int`,
+        })
+        .from(pageViews)
+        .where(gte(pageViews.createdAt, since))
+        .groupBy(sql`1`)
+        .orderBy(desc(sql`count(*)`))
+        .limit(10),
+
+      db
         .select({ count: sql<number>`count(*)::int` })
         .from(pageViews)
         .where(gte(pageViews.createdAt, since)),
@@ -112,6 +124,7 @@ export const GET: APIRoute = async ({ url }) => {
         topArticles: topArticleRows,
         deviceBreakdown: deviceRows,
         topReferrers,
+        topCountries: countryRows,
         totalPageviews: totalsRow?.count ?? 0,
         site: siteStats,
       }),

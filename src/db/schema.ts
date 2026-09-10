@@ -37,6 +37,7 @@ export const pageViews = pgTable('page_views', {
   articleId: integer('article_id').references(() => articles.id, { onDelete: 'set null' }),
   referrer: text('referrer'),
   device: text('device'), // 'mobile' | 'tablet' | 'desktop'
+  country: text('country'), // ISO 3166-1 alpha-2 code, from Vercel's geo header
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 

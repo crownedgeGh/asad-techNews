@@ -16,6 +16,8 @@ export const POST: APIRoute = async ({ request }) => {
     }
     const referrer = typeof body.referrer === 'string' ? body.referrer.slice(0, 512) : null;
     const device = DEVICES.has(body.device) ? body.device : null;
+    // Set by Vercel's edge network for every request; absent in local dev.
+    const country = request.headers.get('x-vercel-ip-country');
 
     let articleId: number | null = null;
     const slugMatch = path.match(/^\/article\/([^/]+)\/?$/);
@@ -28,7 +30,7 @@ export const POST: APIRoute = async ({ request }) => {
       articleId = row?.id ?? null;
     }
 
-    await db.insert(pageViews).values({ path, articleId, referrer, device });
+    await db.insert(pageViews).values({ path, articleId, referrer, device, country });
 
     return new Response(JSON.stringify({ ok: true }), {
       status: 201,

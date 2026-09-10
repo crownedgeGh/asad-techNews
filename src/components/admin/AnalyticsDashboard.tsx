@@ -4,6 +4,7 @@ interface DailyPoint { date: string; count: number }
 interface TopArticle { title: string; slug: string; views: number }
 interface DeviceRow { device: string; count: number }
 interface ReferrerRow { source: string; count: number }
+interface CountryRow { country: string; count: number }
 
 interface AnalyticsResponse {
   range: string;
@@ -11,6 +12,7 @@ interface AnalyticsResponse {
   topArticles: TopArticle[];
   deviceBreakdown: DeviceRow[];
   topReferrers: ReferrerRow[];
+  topCountries: CountryRow[];
   totalPageviews: number;
   site: { totalArticles: number; totalViews: number; totalLikes: number; totalComments: number };
 }
@@ -34,6 +36,19 @@ const DEVICE_LABELS: Record<string, string> = {
   desktop: 'Desktop',
   unknown: 'Unknown',
 };
+
+const regionNames = typeof Intl !== 'undefined' && 'DisplayNames' in Intl
+  ? new Intl.DisplayNames(['en'], { type: 'region' })
+  : null;
+
+function countryLabel(code: string): string {
+  if (code === 'unknown') return 'Unknown';
+  try {
+    return regionNames?.of(code) ?? code;
+  } catch {
+    return code;
+  }
+}
 
 function formatDateShort(iso: string): string {
   const d = new Date(`${iso}T00:00:00Z`);
@@ -222,6 +237,33 @@ function DeviceBars({ items }: { items: DeviceRow[] }) {
   );
 }
 
+function CountryBars({ items }: { items: CountryRow[] }) {
+  const total = items.reduce((sum, i) => sum + i.count, 0) || 1;
+  const max = niceCeil(Math.max(...items.map((i) => i.count), 1));
+  return (
+    <div className="lumen-viz space-y-3">
+      <style>{`.lumen-viz { --series-1: ${SEQUENTIAL.light}; } [data-theme="dark"] .lumen-viz { --series-1: ${SEQUENTIAL.dark}; }`}</style>
+      {items.length === 0 && <p className="text-sm text-base-content/60">No pageviews in this range yet.</p>}
+      {items.map((row) => (
+        <div key={row.country} className="group">
+          <div className="flex items-center justify-between text-xs mb-1">
+            <span className="text-base-content">{countryLabel(row.country)}</span>
+            <span className="tabular-nums text-base-content/60">
+              {row.count.toLocaleString()} · {Math.round((row.count / total) * 100)}%
+            </span>
+          </div>
+          <div className="h-3 rounded-full bg-base-200 overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all group-hover:opacity-80"
+              style={{ width: `${Math.max((row.count / max) * 100, 3)}%`, background: 'var(--series-1)' }}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function AnalyticsDashboard() {
   const [range, setRange] = useState('30d');
   const [data, setData] = useState<AnalyticsResponse | null>(null);
@@ -320,6 +362,11 @@ export default function AnalyticsDashboard() {
             <h2 className="font-semibold text-base-content mb-4">Devices</h2>
             <DeviceBars items={data?.deviceBreakdown ?? []} />
           </div>
+        </div>
+
+        <div className="bg-base-100 rounded-xl border border-base-300 shadow-sm p-6">
+          <h2 className="font-semibold text-base-content mb-4">Views by country</h2>
+          <CountryBars items={data?.topCountries ?? []} />
         </div>
 
         <div className="bg-base-100 rounded-xl border border-base-300 shadow-sm overflow-hidden">

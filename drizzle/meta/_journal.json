@@ -57,6 +57,13 @@
       "when": 1787038257710,
       "tag": "0007_shocking_swarm",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789041448104,
+      "tag": "0008_common_frank_castle",
+      "breakpoints": true
     }
   ]
 }
